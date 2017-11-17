@@ -1,4 +1,4 @@
-package place.client;
+package place.client.gui;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
