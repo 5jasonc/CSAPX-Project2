@@ -8,7 +8,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
-public class PlaceClient extends Application {
+public class PlaceGUI extends Application {
 
     private BorderPane root;
     private GridPane mainGrid;
