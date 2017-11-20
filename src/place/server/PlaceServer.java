@@ -44,15 +44,18 @@ public class PlaceServer implements PlaceProtocol, Closeable {
             {
                 Socket newConn = server.accept();
                 PlaceClientThread client = new PlaceClientThread(newConn, dim, this);
-                String name = client.getName();
-                if(users.containsKey(name))
+                String username = client.getUsername();
+
+                if(users.containsKey(username))
                 {
                     client.loginFailed();
+                    continue;
                 }
-
-                client.start();
-
-                users.put(client.getName(), client);
+                else
+                {
+                    users.put(client.getName(), client);
+                    client.start();
+                }
             }
             catch(IOException ioe)
             {

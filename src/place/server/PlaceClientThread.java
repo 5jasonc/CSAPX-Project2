@@ -38,6 +38,8 @@ public class PlaceClientThread extends Thread
         clientOut.println(PlaceProtocol.LOGIN_FAILED + " " + this.username);
     }
 
+    String getUsername(){ return this.username; }
+
     /**
      * An override of the run method which runs the thread
      */
