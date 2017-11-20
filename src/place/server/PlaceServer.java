@@ -42,7 +42,10 @@ public class PlaceServer implements PlaceProtocol, Closeable {
         {
             try
             {
-                Socket newPlayer = server.accept();
+                Socket newConn = server.accept();
+                PlaceClientThread client = new PlaceClientThread(newConn, this);
+                client.start();
+                users.add(client);
             }
             catch(IOException ioe)
             {
