@@ -6,8 +6,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import place.PlaceException;
 import place.PlaceProtocol;
@@ -16,13 +16,13 @@ public class PlaceServer implements PlaceProtocol, Closeable {
 
     private PlaceBoard model;
     private ServerSocket server;
-    private List<PlaceClientThread> users;
+    private Map<String, PlaceClientThread> users;
     private boolean go = false;
 
     public PlaceServer(int port) throws PlaceException
     {
         // makes a new ArrayList of PlaceClientThreads (this allows us to update the users online)
-        this.users = new ArrayList<>();
+        this.users = new HashMap<>();
 
         try
         {
@@ -43,9 +43,16 @@ public class PlaceServer implements PlaceProtocol, Closeable {
             try
             {
                 Socket newConn = server.accept();
-                PlaceClientThread client = new PlaceClientThread(newConn, this);
+                PlaceClientThread client = new PlaceClientThread(newConn, dim, this);
+                String name = client.getName();
+                if(users.containsKey(name))
+                {
+                    client.loginFailed();
+                }
+
                 client.start();
-                users.add(client);
+
+                users.put(client.getName(), client);
             }
             catch(IOException ioe)
             {

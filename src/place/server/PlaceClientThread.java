@@ -1,10 +1,13 @@
 package place.server;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+
 import java.net.Socket;
+
 import java.util.Scanner;
+
+import place.PlaceProtocol;
 
 public class PlaceClientThread extends Thread
 {
@@ -13,12 +16,26 @@ public class PlaceClientThread extends Thread
 
     private PlaceServer server;
 
+    private int dim;
 
-    public PlaceClientThread(Socket player, PlaceServer server) throws IOException
+    private String username;
+
+    public PlaceClientThread(Socket player, int dim, PlaceServer server) throws IOException
     {
         this.clientIn = new Scanner( player.getInputStream() );
         this.clientOut = new PrintWriter( player.getOutputStream() );
+
+        // LOGIN username; gets second part and sets it to the name
+        this.username = clientIn.nextLine().split(" ")[1];
+
+        this.dim = dim;
+
         this.server = server;
+    }
+
+    void loginFailed()
+    {
+        clientOut.println(PlaceProtocol.LOGIN_FAILED + " " + this.username);
     }
 
     /**
