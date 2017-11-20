@@ -10,60 +10,71 @@ import java.util.HashMap;
 import java.util.Map;
 
 import place.PlaceException;
-import place.PlaceProtocol;
 
-public class PlaceServer implements PlaceProtocol, Closeable {
+public class PlaceServer implements Closeable {
+    // the server should be 15 lines-ish
 
-    private PlaceBoard model;
+    // server communicates to "NetworkServer"
+    // server communicates with "PlaceClientThread"
+    // HashMap<String, ObjectOutputStream>
+    //          user    output connection
+    // NetworkServer needs to be synchronized: login, sending board to user(in login), tile change (looped through), logoff
+
+
     private ServerSocket server;
-    private Map<String, PlaceClientThread> users;
     private boolean go = false;
 
+    /**
+     *
+     *
+     * @param port
+     *
+     * @throws PlaceException
+     */
     public PlaceServer(int port) throws PlaceException
     {
-        // makes a new ArrayList of PlaceClientThreads (this allows us to update the users online)
-        this.users = new HashMap<>();
-
         try
         {
-            // makes a new ServerSocket on port
+            // makes a new server
             this.server = new ServerSocket(port);
         }
         catch(IOException ioe)
         {
+            // throws the exception as a PlaceException
             throw new PlaceException(ioe);
         }
         this.go = true;
     }
 
-    public void run(int dim) throws PlaceException
+    /**
+     *
+     *
+     * @param dim
+     *
+     * @throws PlaceException
+     */
+    private void run(int dim) throws PlaceException
     {
         while(this.go)
         {
             try
             {
-                Socket newConn = server.accept();
-                PlaceClientThread client = new PlaceClientThread(newConn, dim, this);
-                String username = client.getUsername();
-
-                if(users.containsKey(username))
-                {
-                    client.loginFailed();
-                    continue;
-                }
-                else
-                {
-                    users.put(client.getName(), client);
-                    client.start();
-                }
+                // gather a new client
+                PlaceClientThread client = new PlaceClientThread(server.accept(), dim, this);
+                // start the thread and keep going
+                client.start();
             }
-            catch(IOException ioe)
+            catch(Exception e)
             {
-                throw new PlaceException(ioe);
+                // throws the error as  PlaceException
+                throw new PlaceException(e);
             }
         }
     }
 
+    /**
+     *
+     */
     public void close()
     {
         try
@@ -76,6 +87,11 @@ public class PlaceServer implements PlaceProtocol, Closeable {
         }
     }
 
+    /**
+     *
+     *
+     * @param args
+     */
     public static void main(String[] args) {
         if(args.length != 2)
         {

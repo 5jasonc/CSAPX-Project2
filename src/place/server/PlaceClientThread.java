@@ -1,44 +1,50 @@
 package place.server;
 
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
 import java.net.Socket;
 
-import java.util.Scanner;
-
-import place.PlaceProtocol;
+import place.network.PlaceRequest;
 
 public class PlaceClientThread extends Thread
 {
-    private Scanner clientIn;
-    private PrintWriter clientOut;
+    private ObjectInputStream clientIn;
+    private ObjectOutputStream clientOut;
 
     private PlaceServer server;
 
     private int dim;
 
-    private String username;
-
-    public PlaceClientThread(Socket player, int dim, PlaceServer server) throws IOException
+    public PlaceClientThread(Socket player, int dim, PlaceServer server) throws IOException, ClassNotFoundException
     {
-        this.clientIn = new Scanner( player.getInputStream() );
-        this.clientOut = new PrintWriter( player.getOutputStream() );
+        this.clientIn = new ObjectInputStream( player.getInputStream() );
+        this.clientOut = new ObjectOutputStream( player.getOutputStream() );
 
         // LOGIN username; gets second part and sets it to the name
-        this.username = clientIn.nextLine().split(" ")[1];
+        PlaceRequest<?> request = (PlaceRequest<?>) clientIn.readObject();
+
 
         this.dim = dim;
 
         this.server = server;
     }
 
-    void loginFailed()
+    void loginFailed() throws IOException
     {
-        clientOut.println(PlaceProtocol.LOGIN_FAILED + " " + this.username);
+
     }
 
-    String getUsername(){ return this.username; }
+    void loginSucceeded() throws IOException
+    {
+    }
+
+
+    String getUsername()
+    {
+        return "";
+    }
 
     /**
      * An override of the run method which runs the thread
