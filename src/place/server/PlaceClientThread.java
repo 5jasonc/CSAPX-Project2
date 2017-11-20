@@ -10,21 +10,31 @@ import place.network.PlaceRequest;
 
 public class PlaceClientThread extends Thread
 {
-    private ObjectInputStream clientIn;
-    private ObjectOutputStream clientOut;
+    private ObjectInputStream in;
+    private ObjectOutputStream out;
 
     private PlaceServer server;
+
+    String username;
 
     private int dim;
 
     public PlaceClientThread(Socket player, int dim, PlaceServer server) throws IOException, ClassNotFoundException
     {
-        this.clientIn = new ObjectInputStream( player.getInputStream() );
-        this.clientOut = new ObjectOutputStream( player.getOutputStream() );
+        this.in = new ObjectInputStream( player.getInputStream() );
+        this.out = new ObjectOutputStream( player.getOutputStream() );
 
         // LOGIN username; gets second part and sets it to the name
-        PlaceRequest<?> request = (PlaceRequest<?>) clientIn.readObject();
+        PlaceRequest<?> request = (PlaceRequest<?>)in.readObject();
 
+        if(request.getType() == PlaceRequest.RequestType.LOGIN)
+            this.username = (String) request.getData();
+        else
+        {
+            PlaceRequest<String> loginError = new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Login failed.");
+            out.writeObject(loginError);
+            out.flush();
+        }
 
         this.dim = dim;
 
@@ -43,7 +53,7 @@ public class PlaceClientThread extends Thread
 
     String getUsername()
     {
-        return "";
+        return this.username;
     }
 
     /**
