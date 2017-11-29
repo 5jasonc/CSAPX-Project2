@@ -1,13 +1,8 @@
 package place.server;
 
-import place.PlaceBoard;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.HashMap;
-import java.util.Map;
 
 import place.PlaceException;
 
@@ -22,6 +17,7 @@ public class PlaceServer implements Closeable {
 
 
     private ServerSocket server;
+    private NetworkServer networkServer;
     private boolean go = false;
 
     /**
@@ -31,12 +27,13 @@ public class PlaceServer implements Closeable {
      *
      * @throws PlaceException
      */
-    public PlaceServer(int port) throws PlaceException
+    public PlaceServer(int port, int dim) throws PlaceException
     {
         try
         {
             // makes a new server
             this.server = new ServerSocket(port);
+            this.networkServer = new NetworkServer(dim);
         }
         catch(IOException ioe)
         {
@@ -53,16 +50,14 @@ public class PlaceServer implements Closeable {
      *
      * @throws PlaceException
      */
-    private void run(int dim) throws PlaceException
+    private void run() throws PlaceException
     {
         while(this.go)
         {
             try
             {
-                // gather a new client
-                PlaceClientThread client = new PlaceClientThread(server.accept(), dim, this);
-                // start the thread and keep going
-                client.start();
+                // gather a new client and start it
+                new PlaceClientThread(server.accept(), this, this.networkServer).start();
             }
             catch(Exception e)
             {
@@ -83,7 +78,7 @@ public class PlaceServer implements Closeable {
         }
         catch(IOException ioe)
         {
-            // oops sorry don't know what to do here...
+            // if this happens... well. :)
         }
     }
 
@@ -105,13 +100,13 @@ public class PlaceServer implements Closeable {
 
 
         // tries to make a new server object running on the port
-        try ( PlaceServer server = new PlaceServer( port ) )
+        try ( PlaceServer server = new PlaceServer(port, dim) )
         {
-            server.run( dim );
+            server.run();
         }
         catch (PlaceException e)
         {
-            System.err.println("FATAL ERROR: Server could not be started.");
+            System.err.println("FATAL ERROR: Server hit a fatal error.");
             e.printStackTrace();
         }
     }
