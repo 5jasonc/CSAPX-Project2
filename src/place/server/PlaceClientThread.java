@@ -7,9 +7,12 @@ import java.io.ObjectOutputStream;
 
 import java.net.Socket;
 
+import com.sun.org.apache.regexp.internal.RE;
 import place.PlaceException;
+import place.PlaceTile;
 import place.network.NetworkServer;
 import place.network.PlaceRequest;
+import place.network.PlaceRequest.RequestType;
 
 public class PlaceClientThread extends Thread
 {
@@ -65,6 +68,7 @@ public class PlaceClientThread extends Thread
         {
             try
             {
+                // will eventually put this into PlaceExchange in network package (for code re-usage)
                 // reads in a request from the user (blocks until it reads in)
                 PlaceRequest<?> request = ( PlaceRequest<?> ) in.readObject();
 
@@ -74,6 +78,7 @@ public class PlaceClientThread extends Thread
                     // time in terms of having to check for this every time)
                     case LOGIN:
                         // we should only receive this once, so we make sure username is still null (as it is in at start)
+                        // so we don't make a mistake later on
                         if(username == null)
                         {
                             // set our username
@@ -83,46 +88,47 @@ public class PlaceClientThread extends Thread
                         }
                         break;
                     case CHANGE_TILE:
+                        // lets the networkServer know of a new tile change request
+                        networkServer.tileChangeRequest( (PlaceTile) request.getData() );
                         break;
                     case BOARD:
                         // we shouldn't ever receive a BOARD from player...
-                        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Please don't send board requests to the server."));
-                        out.flush();
-                        networkServer.logout(this.username);
-                        this.alive = false;
+                        badRequest(RequestType.BOARD.toString());
                         break;
                     case ERROR:
                         // we shouldn't ever receive a ERROR from player...
-                        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Please don't send error requests to the server."));
-                        out.flush();
-                        networkServer.logout(this.username);
-                        this.alive = false;
+                        badRequest(RequestType.ERROR.toString());
                         break;
                     case TILE_CHANGED:
-                        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Please don't send TILE_CHANGED requests to the server."));
-                        out.flush();
-                        networkServer.logout(this.username);
-                        this.alive = false;
+                        badRequest(RequestType.TILE_CHANGED.toString());
                         break;
                     case LOGIN_SUCCESS:
-                        this.alive = false;
+                        badRequest(RequestType.LOGIN_SUCCESS.toString());
                         break;
                     default:
                         // if we get send and error
+                        badRequest("UNKNOWN");
                 }
             }
             catch(IOException | ClassNotFoundException e)
             {
                 // skip this read if there is an IOException or ClassNotFoundException
+                // might have to be a termination here if we run into it
             }
         }
     }
 
-    private void badRequest(PlaceRequest.RequestType type) throws IOException
+    private void badRequest(String type) throws IOException
     {
-        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Please don't send LOGIN_SUCCESS requests to the server."));
+        // alerts the user they sent a bad request as well as the type (if somehow we get here they are being naughty
+        // and using a custom client.
+        // please don't be that person
+        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Bad request received: " + type));
+        // flushes the stream so it sends
         out.flush();
+        // logs user out from the server
         networkServer.logout(this.username);
+        // terminate thread
         this.alive = false;
     }
 }

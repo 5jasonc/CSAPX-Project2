@@ -1,5 +1,6 @@
 package place.network;
 
+import place.PlaceTile;
 import place.server.PlaceBoardObservable;
 
 import java.io.IOException;
@@ -54,6 +55,19 @@ public class NetworkServer
     }
 
     /**
+     * Checks to see if a requested username is valid from a player
+     *
+     * @param usernameRequest the requested username from the user which we are checking for.
+     *
+     * @return a boolean; true if the username is already taken, false otherwise.
+     */
+    private boolean usernameTaken(String usernameRequest)
+    {
+        // return whether or not the HashMap contains our key
+        return users.containsKey(usernameRequest);
+    }
+
+    /**
      * Logs a user out. Doesn't need to be synchronized since we won't have multiple people logged in with the same
      * username trying to log out.
      *
@@ -66,16 +80,26 @@ public class NetworkServer
     }
 
     /**
-     * Checks to see if a requested username is valid from a player
+     * Alerts all of the users who are logged in that a new tile change request has occurred. It is synchronized so that
+     * if multiple users send a move for the same tile at the same time we don't have mismatched boards.
      *
-     * @param usernameRequest the requested username from the user which we are checking for.
+     * Synchronization is also used so that we update a single tile at a time.
      *
-     * @return a boolean; true if the username is already taken, false otherwise.
+     * @param tile the PlaceTile request that was made.
      */
-    private boolean usernameTaken(String usernameRequest)
+    public synchronized void tileChangeRequest(PlaceTile tile)
     {
-        // return whether or not the HashMap contains our key
-        return users.containsKey(usernameRequest);
+        for( ObjectOutputStream out : users.values() )
+        {
+            try
+            {
+                out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.TILE_CHANGED, tile));
+            }
+            catch(IOException e)
+            {
+                // squash
+            }
+        }
     }
 
 }
