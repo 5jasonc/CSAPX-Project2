@@ -1,6 +1,5 @@
 package place.network;
 
-import place.network.PlaceRequest;
 import place.server.PlaceBoardObservable;
 
 import java.io.IOException;
@@ -23,8 +22,8 @@ public class NetworkServer
     /**
      * Logs in a user. This is synchronized so we don't run into people requesting the same username at the same time.
      *
-     * @param usernameRequest
-     * @param playerOutputStream
+     * @param usernameRequest The requested username from a user.
+     * @param playerOutputStream The output stream for the user.
      */
     public synchronized void login(String usernameRequest, ObjectOutputStream playerOutputStream)
     {
@@ -52,6 +51,18 @@ public class NetworkServer
         {
             // heck what do we do here??
         }
+    }
+
+    /**
+     * Logs a user out. Doesn't need to be synchronized since we won't have multiple people logged in with the same
+     * username trying to log out.
+     *
+     * @param username The username of the user wishing to log out.
+     */
+    public void logout(String username)
+    {
+        // logs a user out (essentially logs just removes them from the map)
+        users.remove(username);
     }
 
     /**

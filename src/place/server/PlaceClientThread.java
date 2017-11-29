@@ -85,15 +85,27 @@ public class PlaceClientThread extends Thread
                     case CHANGE_TILE:
                         break;
                     case BOARD:
-                        // we shouldn't every receive a board from player...
-                        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Please don't send boards."));
+                        // we shouldn't ever receive a BOARD from player...
+                        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Please don't send board requests to the server."));
                         out.flush();
+                        networkServer.logout(this.username);
+                        this.alive = false;
                         break;
                     case ERROR:
+                        // we shouldn't ever receive a ERROR from player...
+                        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Please don't send error requests to the server."));
+                        out.flush();
+                        networkServer.logout(this.username);
+                        this.alive = false;
                         break;
                     case TILE_CHANGED:
+                        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Please don't send TILE_CHANGED requests to the server."));
+                        out.flush();
+                        networkServer.logout(this.username);
+                        this.alive = false;
                         break;
                     case LOGIN_SUCCESS:
+                        this.alive = false;
                         break;
                     default:
                         // if we get send and error
@@ -106,4 +118,11 @@ public class PlaceClientThread extends Thread
         }
     }
 
+    private void badRequest(PlaceRequest.RequestType type) throws IOException
+    {
+        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Please don't send LOGIN_SUCCESS requests to the server."));
+        out.flush();
+        networkServer.logout(this.username);
+        this.alive = false;
+    }
 }
