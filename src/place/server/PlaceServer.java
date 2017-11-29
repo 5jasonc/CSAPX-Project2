@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 
 import place.PlaceException;
+import place.network.NetworkServer;
 
 public class PlaceServer implements Closeable {
     // the server should be 15 lines-ish
@@ -45,8 +46,6 @@ public class PlaceServer implements Closeable {
 
     /**
      *
-     *
-     * @param dim
      *
      * @throws PlaceException
      */

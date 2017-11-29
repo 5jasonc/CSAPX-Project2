@@ -8,6 +8,7 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 import place.PlaceException;
+import place.network.NetworkServer;
 import place.network.PlaceRequest;
 
 public class PlaceClientThread extends Thread
@@ -37,23 +38,10 @@ public class PlaceClientThread extends Thread
             // sets the networkServer
             this.networkServer = networkServer;
 
-            // reads in the first request from user
-            PlaceRequest<?> request = ( PlaceRequest<?> ) in.readObject();
-
-            // if the request is a LOGIN, set the username to the data of the request
-            if (request.getType() == PlaceRequest.RequestType.LOGIN)
-                this.username = (String) request.getData();
-            // otherwise we've hit an oops and we need to tell the user to exit (they sent a bad request)
-            else
-            {
-                // write an error to the buffer saying login failed
-                out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Login failed."));
-                // flush buffer to user
-                out.flush();
-            }
+            this.alive = true;
         }
         // if we catch these exceptions
-        catch(IOException | ClassNotFoundException e)
+        catch(IOException e)
         {
             // we throw them out to server
             throw new PlaceException(e);
@@ -72,10 +60,6 @@ public class PlaceClientThread extends Thread
     @Override
     public void run()
     {
-        // first we must login using our USERNAME and our OUTPUT
-        if(this.networkServer.login(this.username, this.out))
-            this.alive = true;
-
         // while the connection is alive
         while(this.alive)
         {
@@ -86,22 +70,33 @@ public class PlaceClientThread extends Thread
 
                 switch(request.getType())
                 {
+                    // might have to rework this so that we set username in the constructor instead of here (might save
+                    // time in terms of having to check for this every time)
+                    case LOGIN:
+                        // we should only receive this once, so we make sure username is still null (as it is in at start)
+                        if(username == null)
+                        {
+                            // set our username
+                            this.username = (String) request.getData();
+                            // attempts to login here
+                            networkServer.login(this.username, this.out);
+                        }
+                        break;
+                    case CHANGE_TILE:
+                        break;
                     case BOARD:
                         // we shouldn't every receive a board from player...
                         out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Please don't send boards."));
                         out.flush();
                         break;
-                    case LOGIN:
-                        // we shouldn't ever receive a login request from player at this point.
-                        break;
                     case ERROR:
                         break;
                     case TILE_CHANGED:
                         break;
-                    case CHANGE_TILE:
-                        break;
                     case LOGIN_SUCCESS:
                         break;
+                    default:
+                        // if we get send and error
                 }
             }
             catch(IOException | ClassNotFoundException e)
