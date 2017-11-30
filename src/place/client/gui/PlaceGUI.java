@@ -16,6 +16,7 @@ import java.net.Socket;
 import java.util.List;
 
 import place.PlaceBoard;
+import place.client.PlaceClient;
 import place.network.PlaceRequest;
 import place.network.PlaceRequest.RequestType;
 
@@ -26,15 +27,11 @@ public class PlaceGUI extends Application {
 
     private List<String> parameters;
 
+    private PlaceClient client;
+
     private String username;
 
     private PlaceBoard board;
-
-    private Socket serverConn;
-
-    private ObjectInputStream in;
-
-    private ObjectOutputStream out;
 
     private boolean go = false;
 
@@ -48,24 +45,21 @@ public class PlaceGUI extends Application {
         this.parameters = super.getParameters().getRaw();
 
         // 0 => host, 1 => port, 2 => username
+
         String host = parameters.get(0);
         int port = Integer.parseInt(parameters.get(1));
         this.username = parameters.get(2);
 
-        // connects to the server
-        this.serverConn = new Socket(host, port);
+        this.client = new PlaceClient(host, port, username);
 
-        // sets the in and out streams
-        this.in = new ObjectInputStream( serverConn.getInputStream() );
-        this.out = new ObjectOutputStream( serverConn.getOutputStream() );
+        client.sendRequest(new PlaceRequest<>(RequestType.LOGIN, username));
 
         // send out our login place request immediately
-        out.writeObject(new PlaceRequest<>(RequestType.LOGIN, this.username));
 
         try
         {
             // read in our first object (should be PlaceRequest<String> with username or ERROR)
-            PlaceRequest<?> request = ( PlaceRequest<?> ) in.readObject();
+            PlaceRequest<?> request = ( PlaceRequest<?> ) client.getRequest();
 
             switch(request.getType())
             {
@@ -87,18 +81,17 @@ public class PlaceGUI extends Application {
             if(this.go)
             {
                 // read in our next object
-                request = ( PlaceRequest<?> ) in.readObject();
 
                 // read in our board checking to make sure it really is a board
                 if(request.getType() == RequestType.BOARD)
-                    this.board = (PlaceBoard) request.getData();
+                    this.board = client.readBoard();
             }
 
             // read our second object (should be PlaceRequest<PlaceBoard>)
         }
         catch (IOException e)
         {
-
+            // squash
         }
 
     }
