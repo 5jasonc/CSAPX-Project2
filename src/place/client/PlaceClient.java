@@ -1,7 +1,9 @@
 package place.client;
 
 import place.PlaceBoard;
+import place.PlaceException;
 import place.network.PlaceRequest;
+import place.PlaceBoardObservable;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -12,7 +14,7 @@ public class PlaceClient {
 
     private String username;
 
-    private PlaceBoard board;
+    private PlaceBoardObservable board;
 
     private Socket serverConn;
 
@@ -22,15 +24,62 @@ public class PlaceClient {
 
     private boolean go = false;
 
-    public PlaceClient(String host, int port, String username) throws IOException
+    public PlaceClient(String host, int port, String username, PlaceBoardObservable model) throws PlaceException
     {
-        // connects to the server
-        this.serverConn = new Socket(host, port);
+        try
+        {
+            // connects to the server
+            this.serverConn = new Socket(host, port);
+            this.username = username;
 
-        // sets the in and out streams
-        this.in = new ObjectInputStream( serverConn.getInputStream() );
-        this.out = new ObjectOutputStream( serverConn.getOutputStream() );
-        out.flush();
+
+            // COMMUNICATION BUILDING SEQUENCE ================================
+            // sets the in and out streams
+            this.in = new ObjectInputStream(serverConn.getInputStream());
+            this.out = new ObjectOutputStream(serverConn.getOutputStream());
+            out.flush();
+
+
+            // LOG IN SEQUENCE ================================
+            // write out our login request
+            out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.LOGIN, username));
+
+            // wait for response from server
+            PlaceRequest<?> response = (PlaceRequest<?>) in.readObject();
+
+            // go through each case
+            // LOGIN_SUCCESS or ERROR (or unknown case)
+            switch (response.getType())
+            {
+                case LOGIN_SUCCESS:
+                    System.out.println("Successfully joined Place server as \"" + response.getData() + "\".");
+                    this.go = true;
+                    break;
+                case ERROR:
+                    System.out.println("Failed to join Place server. Server response: " + response.getData() + ". Terminating.");
+                    break;
+                default:
+                    System.out.println("Unknown response received. Terminating.");
+                    break;
+            }
+
+
+            // BOARD READ-IN SEQUENCE ===============================
+            if(this.go)
+            {
+                PlaceRequest<?> board =  ( PlaceRequest<?> ) in.readObject();
+                if(board.getType() == PlaceRequest.RequestType.BOARD)
+                    this.board.initializeBoard( (PlaceBoard) board.getData() );
+                else
+                    this.go = false;
+            }
+
+            this.board = model;
+        }
+        catch(IOException | ClassNotFoundException e)
+        {
+            throw new PlaceException(e);
+        }
     }
 
 
@@ -44,14 +93,5 @@ public class PlaceClient {
     {
         return in.readObject();
     }
-
-    public PlaceBoard readBoard() throws IOException, ClassNotFoundException
-    {
-        PlaceRequest<?> request = ( PlaceRequest<?> ) in.readObject();
-        this.board = (PlaceBoard) request.getData();
-
-        return this.board;
-    }
-
 
 }

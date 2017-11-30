@@ -1,7 +1,7 @@
 package place.network;
 
 import place.PlaceTile;
-import place.server.PlaceBoardObservable;
+import place.PlaceBoardObservable;
 import place.network.PlaceRequest.RequestType;
 
 import java.io.IOException;

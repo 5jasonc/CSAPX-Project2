@@ -1,7 +1,6 @@
 package place.client.gui;
 
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
@@ -9,20 +8,17 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
 import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
 
-import place.PlaceBoard;
 import place.client.PlaceClient;
-import place.network.PlaceRequest;
-import place.network.PlaceRequest.RequestType;
+import place.PlaceBoardObservable;
 
-public class PlaceGUI extends Application {
+public class PlaceGUI extends Application implements Observer {
 
     private BorderPane root;
+
     private GridPane mainGrid;
 
     private List<String> parameters;
@@ -31,7 +27,7 @@ public class PlaceGUI extends Application {
 
     private String username;
 
-    private PlaceBoard board;
+    private PlaceBoardObservable model;
 
     private boolean go = false;
 
@@ -50,50 +46,9 @@ public class PlaceGUI extends Application {
         int port = Integer.parseInt(parameters.get(1));
         this.username = parameters.get(2);
 
-        this.client = new PlaceClient(host, port, username);
+        this.model = new PlaceBoardObservable();
 
-        client.sendRequest(new PlaceRequest<>(RequestType.LOGIN, username));
-
-        // send out our login place request immediately
-
-        try
-        {
-            // read in our first object (should be PlaceRequest<String> with username or ERROR)
-            PlaceRequest<?> request = ( PlaceRequest<?> ) client.getRequest();
-
-            switch(request.getType())
-            {
-                case LOGIN_SUCCESS:
-                    System.out.println("Successfully joined Place server as \"" + request.getData() + "\".");
-                    this.go = true;
-                    break;
-                case ERROR:
-                    System.out.println("Failed to join Place server. Reason: " + request.getData() + ". Terminating.");
-                    Platform.exit();
-                    break;
-                default:
-                    System.out.println("Unknown response received. Terminating.");
-                    Platform.exit();
-                    // unknown response, terminate
-            }
-
-
-            if(this.go)
-            {
-                // read in our next object
-
-                // read in our board checking to make sure it really is a board
-                if(request.getType() == RequestType.BOARD)
-                    this.board = client.readBoard();
-            }
-
-            // read our second object (should be PlaceRequest<PlaceBoard>)
-        }
-        catch (IOException e)
-        {
-            // squash
-        }
-
+        this.client = new PlaceClient(host, port, username, model);
     }
 
     /**
@@ -106,10 +61,12 @@ public class PlaceGUI extends Application {
     {
         this.root = new BorderPane();
 
-        this.mainGrid = buildMainGrid(this.board.DIM, this.board.DIM, 90);
+        this.mainGrid = buildMainGrid(this.model.getDIM(), this.model.getDIM(), 90);
 
         // sets just a rectangle
         this.root.setCenter(mainGrid);
+
+        this.model.addObserver(this);
 
         // sets our scene
         mainStage.setScene(new Scene(this.root));
@@ -125,15 +82,27 @@ public class PlaceGUI extends Application {
         for(int row = 0; row < rows; ++row)
             for(int col = 0; col < cols; ++col)
             {
-                int red = this.board.getTile(row,col).getColor().getRed();
-                int green = this.board.getTile(row,col).getColor().getGreen();
-                int blue = this.board.getTile(row,col).getColor().getBlue();
+                int red = this.model.getTile(row,col).getColor().getRed();
+                int green = this.model.getTile(row,col).getColor().getGreen();
+                int blue = this.model.getTile(row,col).getColor().getBlue();
 
                 Rectangle tile = new Rectangle(size, size, Color.rgb(red, green, blue));
 
                 mainGrid.add(tile, col, row);
             }
         return mainGrid;
+    }
+
+    public void update(Observable o, Object t)
+    {
+        assert o == this.model : "Update call from non-model";
+
+        this.refresh();
+    }
+
+    private void refresh()
+    {
+        // squash
     }
 
     public void stop() throws Exception
