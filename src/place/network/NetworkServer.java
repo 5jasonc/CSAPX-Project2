@@ -38,6 +38,10 @@ public class NetworkServer
             {
                 // put ourselves in the HashMap
                 users.put(usernameRequest, playerOutputStream);
+
+                // alert that user has connected
+                System.out.println("[NetworkServer]: " + usernameRequest + " has joined the server.");
+
                 // tell the user they were logged in successfully
                 playerOutputStream.writeObject(new PlaceRequest<>(RequestType.LOGIN_SUCCESS, usernameRequest));
                 // sends the board as well since we have connected and we need to build our board
@@ -46,7 +50,7 @@ public class NetworkServer
             else
             {
                 // tell the user the username is taken
-                playerOutputStream.writeObject(new PlaceRequest<>(RequestType.ERROR, "Username taken"));
+                playerOutputStream.writeObject(new PlaceRequest<>(RequestType.ERROR, "Username taken."));
             }
             // write our result out (doesn't matter which because either way we need to send something)
             playerOutputStream.flush();
@@ -81,7 +85,8 @@ public class NetworkServer
         // logs a user out (essentially logs just removes them from the map)
         // since the ObjectOutputStream is just a pointer, this is all we have to do
         users.remove(username);
-        System.err.println("Disconnect alert: " + username + " disconnected.");
+        // alert that user has disconnected
+        System.out.println("[NetworkServer]: " + username + " has left the server.");
     }
 
     /**

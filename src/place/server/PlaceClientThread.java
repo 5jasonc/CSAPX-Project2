@@ -25,22 +25,22 @@ public class PlaceClientThread extends Thread
     private String username;
 
     // if the connection is alive or not (used to disconnect)
-    private boolean alive = false;
+    private boolean go = false;
 
     public PlaceClientThread(Socket player, PlaceServer server, NetworkServer networkServer) throws PlaceException
     {
         try
         {
-            // sets the ObjectInputStream
-            this.in = new ObjectInputStream(player.getInputStream());
-            // sets the ObjectOutputStream
+            // sets the ObjectOutputStream (need to do OUTPUT before we can do INPUT)
             this.out = new ObjectOutputStream(player.getOutputStream());
+            // sets the ObjectInputStream
+            this.in = new ObjectInputStream( player.getInputStream() );
             // sets the server
             this.server = server;
             // sets the networkServer
             this.networkServer = networkServer;
 
-            this.alive = true;
+            this.go = true;
         }
         // if we catch these exceptions
         catch(IOException e)
@@ -63,7 +63,7 @@ public class PlaceClientThread extends Thread
     public void run()
     {
         // while the connection is still alive
-        while(this.alive)
+        while(this.go)
         {
             try
             {
@@ -81,9 +81,9 @@ public class PlaceClientThread extends Thread
                         if(username == null)
                         {
                             // set our username
-                            this.username = (String) request.getData();
+                            String usernameRequest = (String) request.getData();
                             // attempts to login here
-                            networkServer.login(this.username, this.out);
+                            networkServer.login(usernameRequest, this.out);
                         }
                         break;
                     case CHANGE_TILE:
@@ -108,10 +108,15 @@ public class PlaceClientThread extends Thread
                         badRequest("UNKNOWN");
                 }
             }
-            catch(IOException | ClassNotFoundException e)
+            catch(ClassNotFoundException e)
             {
-                // skip this read if there is an IOException or ClassNotFoundException
+                // skip this read if there is a ClassNotFoundException
                 // might have to be a termination here if we run into it
+            }
+            catch(IOException e)
+            {
+                // if we hit a IOException one of the connections closed we are assuming disconnection
+                this.go = false;
             }
         }
         // we have now exited the loop which means the user will be disconnecting now
@@ -127,16 +132,18 @@ public class PlaceClientThread extends Thread
         out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Bad request received: " + type + ". Terminating connection."));
         // flushes the stream so it sends
         out.flush();
-        // logs user out from the server
-        networkServer.logout(this.username);
         // terminate thread
-        this.alive = false;
+        this.go = false;
     }
 
     private void close()
     {
         try
         {
+            // logs user out from the server before closing connections if they were previously logged in
+            if(this.username != null)
+                networkServer.logout(this.username);
+            // closes the in and out connections
             this.in.close();
             this.out.close();
         }

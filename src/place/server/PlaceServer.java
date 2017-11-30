@@ -42,6 +42,7 @@ public class PlaceServer implements Closeable {
             throw new PlaceException(ioe);
         }
         this.go = true;
+        System.out.println("Server started");
     }
 
     /**
