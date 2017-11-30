@@ -11,6 +11,7 @@ import java.util.Map;
 
 public class NetworkServer
 {
+    //TODO server doesn't need the OBSERVABLE board, it just holds a board (we only dispatch from server) don't need to update it. That is next.
     //          uname,  output to user
     private Map<String, ObjectOutputStream> users;
     private PlaceBoardObservable model;

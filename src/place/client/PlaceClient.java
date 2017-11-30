@@ -24,6 +24,11 @@ public class PlaceClient {
 
     private boolean go = false;
 
+    private synchronized boolean go()
+    {
+        return this.go;
+    }
+
     public PlaceClient(String host, int port, String username, PlaceBoardObservable model) throws PlaceException
     {
         try
@@ -75,11 +80,47 @@ public class PlaceClient {
             }
 
             this.board = model;
+
+            new Thread( () -> this.run() ).start();
         }
         catch(IOException | ClassNotFoundException e)
         {
             throw new PlaceException(e);
         }
+    }
+
+    private void run()
+    {
+        // this.go() is synchronized so we only do this one at a time
+        while(this.go())
+        {
+            try
+            {
+                PlaceRequest<?> request = ( PlaceRequest<?> ) this.in.readObject();
+
+                switch(request.getType())
+                {
+                    case TILE_CHANGED:
+                        break;
+                    case ERROR:
+                        break;
+                    // should not ever get these, if we get here we have to stop our client
+                    case BOARD:
+                        break;
+                    case LOGIN:
+                        break;
+                    case LOGIN_SUCCESS:
+                        break;
+                    case CHANGE_TILE:
+                        break;
+                }
+            }
+            catch(IOException | ClassNotFoundException e)
+            {
+                // alert the user there was an error
+            }
+        }
+        // yay
     }
 
 
