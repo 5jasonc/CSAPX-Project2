@@ -1,15 +1,14 @@
 package place.server;
 
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 import java.net.Socket;
 
-import com.sun.org.apache.regexp.internal.RE;
 import place.PlaceException;
 import place.PlaceTile;
+
 import place.network.NetworkServer;
 import place.network.PlaceRequest;
 import place.network.PlaceRequest.RequestType;
@@ -51,7 +50,7 @@ public class PlaceClientThread extends Thread
         }
     }
 
-    // probably won't be needed but I write it just in case
+    // probably won't be needed but I wrote it just in case
     String getUsername()
     {
         return this.username;
@@ -63,7 +62,7 @@ public class PlaceClientThread extends Thread
     @Override
     public void run()
     {
-        // while the connection is alive
+        // while the connection is still alive
         while(this.alive)
         {
             try
@@ -91,12 +90,11 @@ public class PlaceClientThread extends Thread
                         // lets the networkServer know of a new tile change request
                         networkServer.tileChangeRequest( (PlaceTile) request.getData() );
                         break;
+                    // we shouldn't ever receive these from the player...
                     case BOARD:
-                        // we shouldn't ever receive a BOARD from player...
                         badRequest(RequestType.BOARD.toString());
                         break;
                     case ERROR:
-                        // we shouldn't ever receive a ERROR from player...
                         badRequest(RequestType.ERROR.toString());
                         break;
                     case TILE_CHANGED:
@@ -106,7 +104,7 @@ public class PlaceClientThread extends Thread
                         badRequest(RequestType.LOGIN_SUCCESS.toString());
                         break;
                     default:
-                        // if we get send and error
+                        // if we get an unknown request send an error reporting it
                         badRequest("UNKNOWN");
                 }
             }
@@ -116,6 +114,9 @@ public class PlaceClientThread extends Thread
                 // might have to be a termination here if we run into it
             }
         }
+        // we have now exited the loop which means the user will be disconnecting now
+        // we can close the Output and Input streams.
+        close();
     }
 
     private void badRequest(String type) throws IOException
@@ -123,12 +124,25 @@ public class PlaceClientThread extends Thread
         // alerts the user they sent a bad request as well as the type (if somehow we get here they are being naughty
         // and using a custom client.
         // please don't be that person
-        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Bad request received: " + type));
+        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Bad request received: " + type + ". Terminating connection."));
         // flushes the stream so it sends
         out.flush();
         // logs user out from the server
         networkServer.logout(this.username);
         // terminate thread
         this.alive = false;
+    }
+
+    private void close()
+    {
+        try
+        {
+            this.in.close();
+            this.out.close();
+        }
+        catch(IOException e)
+        {
+            // this shouldn't ever happen.
+        }
     }
 }

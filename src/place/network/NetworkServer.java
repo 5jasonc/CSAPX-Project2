@@ -2,6 +2,7 @@ package place.network;
 
 import place.PlaceTile;
 import place.server.PlaceBoardObservable;
+import place.network.PlaceRequest.RequestType;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -17,7 +18,7 @@ public class NetworkServer
     public NetworkServer(int dim)
     {
         this. users = new HashMap<>();
-        this.model = new PlaceBoardObservable();
+        this.model = new PlaceBoardObservable(dim);
     }
 
     /**
@@ -38,12 +39,14 @@ public class NetworkServer
                 // put ourselves in the HashMap
                 users.put(usernameRequest, playerOutputStream);
                 // tell the user they were logged in successfully
-                playerOutputStream.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.LOGIN_SUCCESS, usernameRequest));
+                playerOutputStream.writeObject(new PlaceRequest<>(RequestType.LOGIN_SUCCESS, usernameRequest));
+                // sends the board as well since we have connected and we need to build our board
+                playerOutputStream.writeObject(new PlaceRequest<>(RequestType.BOARD, this.model.getPlaceBoard()));
             }
             else
             {
                 // tell the user the username is taken
-                playerOutputStream.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Username taken"));
+                playerOutputStream.writeObject(new PlaceRequest<>(RequestType.ERROR, "Username taken"));
             }
             // write our result out (doesn't matter which because either way we need to send something)
             playerOutputStream.flush();
@@ -76,7 +79,9 @@ public class NetworkServer
     public void logout(String username)
     {
         // logs a user out (essentially logs just removes them from the map)
+        // since the ObjectOutputStream is just a pointer, this is all we have to do
         users.remove(username);
+        System.err.println("Disconnect alert: " + username + " disconnected.");
     }
 
     /**

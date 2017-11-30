@@ -1,5 +1,7 @@
 package place.server;
 
+import place.PlaceBoard;
+
 import java.util.Observable;
 
 /**
@@ -7,5 +9,16 @@ import java.util.Observable;
  */
 public class PlaceBoardObservable extends Observable
 {
+    private PlaceBoard placeBoard;
 
+    public PlaceBoardObservable(int dim)
+    {
+        // creates a new PlaceBoard
+        this.placeBoard = new PlaceBoard(dim);
+    }
+
+    public PlaceBoard getPlaceBoard()
+    {
+        return this.placeBoard;
+    }
 }
