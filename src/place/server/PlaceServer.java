@@ -60,11 +60,11 @@ public class PlaceServer implements Closeable {
                 // gather a new client and start it
                 new PlaceClientThread(server.accept(), this, this.networkServer).start();
             }
-            catch(Exception e)
-            {
+            catch(Exception e){
                 // throws the error as  PlaceException
                 throw new PlaceException(e);
             }
+
         }
     }
 
