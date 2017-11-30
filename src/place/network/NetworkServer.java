@@ -15,9 +15,15 @@ public class NetworkServer
     private Map<String, ObjectOutputStream> users;
     private PlaceBoardObservable model;
 
+
+    /**
+     * Constructs a new NetworkServer used to communicate to Place clients.
+     *
+     * @param dim the dimension of the board once it is set up.
+     */
     public NetworkServer(int dim)
     {
-        this. users = new HashMap<>();
+        this.users = new HashMap<>();
         this.model = new PlaceBoardObservable(dim);
     }
 
@@ -27,7 +33,7 @@ public class NetworkServer
      * @param usernameRequest The requested username from a user.
      * @param playerOutputStream The output stream for the user.
      */
-    public synchronized void login(String usernameRequest, ObjectOutputStream playerOutputStream)
+    public synchronized boolean login(String usernameRequest, ObjectOutputStream playerOutputStream)
     {
         // checks if the username is taken
         // if it's not, log ourselves in and return true so user can update
@@ -46,6 +52,7 @@ public class NetworkServer
                 playerOutputStream.writeObject(new PlaceRequest<>(RequestType.LOGIN_SUCCESS, usernameRequest));
                 // sends the board as well since we have connected and we need to build our board
                 playerOutputStream.writeObject(new PlaceRequest<>(RequestType.BOARD, this.model.getPlaceBoard()));
+                return true;
             }
             else
             {
@@ -59,6 +66,7 @@ public class NetworkServer
         {
             // heck what do we do here??
         }
+        return false;
     }
 
     /**

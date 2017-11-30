@@ -27,6 +27,15 @@ public class PlaceClientThread extends Thread
     // if the connection is alive or not (used to disconnect)
     private boolean go = false;
 
+
+    /**
+     * Constructs a new thread for a player once they connect to the server.
+     *
+     * @param player The player socket.
+     * @param server The server as a PlaceServer (might not be needed).
+     * @param networkServer The NetworkServer so we can communicate with it.
+     * @throws PlaceException
+     */
     public PlaceClientThread(Socket player, PlaceServer server, NetworkServer networkServer) throws PlaceException
     {
         try
@@ -57,7 +66,7 @@ public class PlaceClientThread extends Thread
     }
 
     /**
-     * An override of the run method which runs the thread
+     * An override of the run method which runs the thread.
      */
     @Override
     public void run()
@@ -77,13 +86,16 @@ public class PlaceClientThread extends Thread
                     // time in terms of having to check for this every time)
                     case LOGIN:
                         // we should only receive this once, so we make sure username is still null (as it is in at start)
-                        // so we don't make a mistake later on
+                        // so we don't make a mistake later on.
                         if(username == null)
                         {
                             // set our username
                             String usernameRequest = (String) request.getData();
                             // attempts to login here
-                            networkServer.login(usernameRequest, this.out);
+                            boolean loginSuccess = networkServer.login(usernameRequest, this.out);
+
+                            if(loginSuccess)
+                                this.username = usernameRequest;
                         }
                         break;
                     case CHANGE_TILE:
@@ -124,23 +136,39 @@ public class PlaceClientThread extends Thread
         close();
     }
 
+    /**
+     * If we receive a bad request from a client, we send a similar message for each of those, which we handle here.
+     *
+     * @param type the type of error that is run into for alerting user.
+     *
+     * @throws IOException if somehow we manage to get an IOException.
+     */
     private void badRequest(String type) throws IOException
     {
         // alerts the user they sent a bad request as well as the type (if somehow we get here they are being naughty
         // and using a custom client.
         // please don't be that person
         out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Bad request received: " + type + ". Terminating connection."));
+
+        // prints to the server log that user has sent a bad request
+        System.err.println("Bad request received from " + this.username + ". REQUEST: " + type);
+
+
         // flushes the stream so it sends
         out.flush();
         // terminate thread
         this.go = false;
     }
 
+
+    /**
+     * Closes the connections so that we can gracefully shut down.
+     */
     private void close()
     {
         try
         {
-            // logs user out from the server before closing connections if they were previously logged in
+            // logs user out from the server before closing connections if they were allowed logged in
             if(this.username != null)
                 networkServer.logout(this.username);
             // closes the in and out connections

@@ -22,11 +22,12 @@ public class PlaceServer implements Closeable {
     private boolean go = false;
 
     /**
+     * Constructs a new PlaceServer which is used to accept connections from Place clients.
      *
+     * @param port the port that is requested to run on.
+     * @param dim the square dimension of the Place board.
      *
-     * @param port
-     *
-     * @throws PlaceException
+     * @throws PlaceException if any sort of exception is run into it is wrapped in a PlaceException.
      */
     public PlaceServer(int port, int dim) throws PlaceException
     {
@@ -42,13 +43,13 @@ public class PlaceServer implements Closeable {
             throw new PlaceException(ioe);
         }
         this.go = true;
-        System.out.println("Server started");
+        System.out.println("Server initialization complete. Accepting connections now.");
     }
 
     /**
+     * Runs the server which essentially just accepts connections and spawns PlaceClientThreads until it is shut down.
      *
-     *
-     * @throws PlaceException
+     * @throws PlaceException if any sort of exception is run into, it is wrapped in a PlaceException.
      */
     private void run() throws PlaceException
     {
@@ -68,7 +69,7 @@ public class PlaceServer implements Closeable {
     }
 
     /**
-     *
+     * Closes the ServerSocket so that no more connections can be created.
      */
     public void close()
     {
@@ -83,9 +84,9 @@ public class PlaceServer implements Closeable {
     }
 
     /**
+     * The main method which is used to create a PlaceServer.
      *
-     *
-     * @param args
+     * @param args The arguments of the main method. The arguments should have: [port, dimension].
      */
     public static void main(String[] args) {
         if(args.length != 2)
