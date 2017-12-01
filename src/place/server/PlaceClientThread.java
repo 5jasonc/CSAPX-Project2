@@ -25,7 +25,12 @@ public class PlaceClientThread extends Thread
     private String username;
 
     // if the connection is alive or not (used to disconnect)
-    private boolean go = false;
+    private boolean go;
+
+    private synchronized boolean go()
+    {
+        return this.go;
+    }
 
 
     /**
@@ -72,7 +77,7 @@ public class PlaceClientThread extends Thread
     public void run()
     {
         // while the connection is still alive
-        while(this.go)
+        while(this.go())
         {
             try
             {

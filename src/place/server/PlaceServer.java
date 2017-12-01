@@ -16,10 +16,11 @@ public class PlaceServer implements Closeable {
     //          user    output connection
     // NetworkServer needs to be synchronized: login, sending board to user(in login), tile change (looped through), logoff
 
+    //TODO: make a server console GUI (for better looking updates)
 
     private ServerSocket server;
     private NetworkServer networkServer;
-    private boolean go = false;
+    private boolean go;
 
     /**
      * Constructs a new PlaceServer which is used to accept connections from Place clients.

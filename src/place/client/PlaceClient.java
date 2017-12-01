@@ -165,7 +165,6 @@ public class PlaceClient {
             }
             catch(IOException | ClassNotFoundException e)
             {
-                System.out.println("IOException!");
                 this.stop();
                 // alert the user there was an error
             }
