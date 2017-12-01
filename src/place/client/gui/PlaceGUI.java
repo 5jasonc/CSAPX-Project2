@@ -8,14 +8,14 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
-import java.util.List;
-import java.util.Observable;
+import java.util.Map;
 import java.util.Observer;
+import java.util.Observable;
 
 import place.PlaceColor;
 import place.PlaceException;
 import place.PlaceTile;
-import place.client.PlaceClient;
+import place.network.NetworkClient;
 import place.PlaceBoardObservable;
 
 public class PlaceGUI extends Application implements Observer {
@@ -24,9 +24,9 @@ public class PlaceGUI extends Application implements Observer {
 
     private GridPane mainGrid;
 
-    private List<String> parameters;
+    private Map< String, String > parameters;
 
-    private PlaceClient client;
+    private NetworkClient serverConn;
 
     private String username;
 
@@ -34,7 +34,21 @@ public class PlaceGUI extends Application implements Observer {
 
     private int rectSize = 90;
 
-    private PlaceColor selectedColor = PlaceColor.AQUA;
+    private PlaceColor selectedColor;
+
+
+    private String getParamNamed( String name ) throws PlaceException
+    {
+        // if we have yet to set our parameters, we get those here
+        if ( this.parameters == null )
+            this.parameters = super.getParameters().getNamed();
+        // checks ot make sure we have the parameter, throws an error if it is missing
+        if ( !parameters.containsKey(name) )
+            throw new PlaceException("Can't find parameter named " + name);
+        // otherwise we return the one as named.
+        else
+            return parameters.get( name );
+    }
 
 
     /**
@@ -43,27 +57,31 @@ public class PlaceGUI extends Application implements Observer {
     @Override
     public void init() throws Exception
     {
+        // calls the super class' init() method
         super.init();
-        this.parameters = super.getParameters().getRaw();
 
-        // 0 => host, 1 => port, 2 => username
+        // gets our parameters that we need (host, port, username)
+        String host = getParamNamed("host");
+        int port = Integer.parseInt(getParamNamed("port"));
+        this.username = getParamNamed("username");
 
-        String host = parameters.get(0);
-        int port = Integer.parseInt(parameters.get(1));
-        this.username = parameters.get(2);
-
+        // sets our model to a new blank PlaceBoardObservable
         this.model = new PlaceBoardObservable();
 
-        this.client = new PlaceClient(host, port, username, model);
+        // sets our network client
+        this.serverConn = new NetworkClient(host, port, username, model);
+
+        // sets our initially selected color to black
+        this.selectedColor = PlaceColor.BLACK;
     }
 
     /**
      * Constructs our GUI and then displays it at the end
      *
-     * @param mainStage the stage that we are showing our GUI upon.
+     * @param primaryStage the stage that we are showing our GUI upon.
      */
     @Override
-    public void start(Stage mainStage) throws Exception
+    public void start(Stage primaryStage) throws Exception
     {
         this.root = new BorderPane();
 
@@ -75,67 +93,93 @@ public class PlaceGUI extends Application implements Observer {
         this.model.addObserver(this);
 
         // sets our scene
-        mainStage.setScene(new Scene(this.root));
+        primaryStage.setScene(new Scene(this.root));
 
         // we have now completed building our GUI, we can show it
-        mainStage.show();
+        primaryStage.show();
     }
 
     public GridPane buildMainGrid(int rows, int cols, int size)
     {
+        // creates a new GridPane that will house our board
         GridPane mainGrid = new GridPane();
 
+        // goes through each tile
         for(int row = 0; row < rows; ++row)
-            for(int col = 0; col < cols; ++col)
+        {
+            for (int col = 0; col < cols; ++col)
             {
-                PlaceTile representative = this.model.getTile(row, col);
-                int r = representative.getColor().getRed();
-                int g = representative.getColor().getGreen();
-                int b = representative.getColor().getBlue();
-
-                Rectangle tile = new Rectangle(size, size, Color.rgb(r, g, b));
-
+                // gets our row and column (so they are effectively final)
                 int tileRow = row;
                 int tileCol = col;
 
-                tile.setOnMouseClicked( (ActionEvent) -> this.client.sendTile(new PlaceTile(tileRow, tileCol, this.username, this.selectedColor, System.nanoTime())));
+                // gets the color of our tile that we are currently setting
+                PlaceColor tileColor = this.model.getTile(row, col).getColor();
 
+                // generates our tile as a rectangle
+                Rectangle tile = new Rectangle(size, size, Color.rgb(tileColor.getRed(), tileColor.getGreen(), tileColor.getBlue()));
+
+                // sets an event listener to our rectangle to listen for clicks on this tile
+                tile.setOnMouseClicked(
+                        (ActionEvent) -> this.serverConn.sendTile(
+                            new PlaceTile(tileRow, tileCol, this.username, this.selectedColor, System.nanoTime())
+                        )
+                );
+
+                // add our tile to the mainGrid ( USING JAVA'S STUPID COLUMN, ROW SYSTEM WHO THE HECK DOES THAT?!?!?! )
                 mainGrid.add(tile, col, row);
             }
+        }
+        // returns our constructed mainGrid
         return mainGrid;
     }
 
     public void update(Observable o, Object tile)
     {
-        assert o == this.model : "Update call from non-model";
+        // makes sure our Observable is the one we want (if it's not then we are screwed)
+        assert o == this.model : "We got updated from the wrong spot.";
 
+        // checks to make sure our tile object is actually a tile (if it's not we redraw the entire board)
+        // this is a HUGE time saver so we don't need to re-draw our board every time, just replace a tile.
         if(tile instanceof PlaceTile)
-            this.refresh( (PlaceTile) tile);
+            // if we're all set to do tile-update actions, we perform them now
+            this.changeTile( (PlaceTile) tile);
         else
-            System.err.println("Did not receive a tile to update... going to redraw board.");
+            // otherwise we alert the user that we are going to redraw the board
+            System.err.println("Hmmm... Our board has sent us something and we don't know what it is. " +
+                    "We will now recreate our board to make sure everything is correct. It should only take a second");
     }
 
-    private void refresh(PlaceTile tile)
+    private void changeTile(PlaceTile tile)
     {
-        int row = tile.getRow();
-        int col = tile.getCol();
+        // get the color of our tile so we can set it properly
+        PlaceColor tileColor = tile.getColor();
 
-        int r = tile.getColor().getRed();
-        int g = tile.getColor().getGreen();
-        int b = tile.getColor().getBlue();
+        // create our new rectangle to be put in place of the old one
+        Rectangle changedTile = new Rectangle(this.rectSize, this.rectSize, Color.rgb(tileColor.getRed(),tileColor.getGreen(),tileColor.getBlue()));
 
-        Rectangle newTile = new Rectangle(this.rectSize, this.rectSize, Color.rgb(r,g,b));
-
-        javafx.application.Platform.runLater( () -> mainGrid.add(newTile, col, row));
+        // using runLater to join this method with the JavaFX thread
+        // set our tile in its correct place
+        javafx.application.Platform.runLater( () -> mainGrid.add(changedTile, tile.getCol(), tile.getRow()));
     }
 
     public void stop() throws Exception
     {
+        // when the program closes we close our NetworkClient so it knows to stop executing and log us out
         super.stop();
-        this.client.close();
+        this.serverConn.close();
     }
 
-    public static void main(String[] args) {
-        Application.launch(args);
+    public static void main(String[] args)
+    {
+        // makes sure we were given the proper number of arguments, if not, tell the user the proper way to start it
+        //
+        if(args.length != 3)
+        {
+            System.err.println("Please run the program as:");
+            System.err.println("$ java PlaceGUI --host=(host IP/URL) --port=(port) --user=(username)");
+        }
+        else
+            Application.launch(args);
     }
 }

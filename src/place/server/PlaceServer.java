@@ -16,7 +16,7 @@ public class PlaceServer implements Closeable {
     //          user    output connection
     // NetworkServer needs to be synchronized: login, sending board to user(in login), tile change (looped through), logoff
 
-    //TODO: make a server console GUI (for better looking updates)
+    //TODO: make a server console GUI (for better looking updates)?
 
     private ServerSocket server;
     private NetworkServer networkServer;
@@ -44,7 +44,9 @@ public class PlaceServer implements Closeable {
             throw new PlaceException(ioe);
         }
         this.go = true;
-        System.out.println("Server initialization complete. Accepting connections now.");
+        // say this to output once we've set everything up.
+        System.out.println("Server initialization complete. Now accepting connections. Listening on: " +
+                server.getInetAddress().getHostAddress() + ":" + server.getLocalPort());
     }
 
     /**
