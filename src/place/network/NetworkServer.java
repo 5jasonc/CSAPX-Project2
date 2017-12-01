@@ -1,7 +1,7 @@
 package place.network;
 
+import place.PlaceBoard;
 import place.PlaceTile;
-import place.PlaceBoardObservable;
 import place.network.PlaceRequest.RequestType;
 
 import java.io.IOException;
@@ -14,7 +14,7 @@ public class NetworkServer
     //TODO server doesn't need the OBSERVABLE board, it just holds a board (we only dispatch from server) don't need to update it. That is next.
     //          uname,  output to user
     private Map<String, ObjectOutputStream> users;
-    private PlaceBoardObservable model;
+    private PlaceBoard board;
 
 
     /**
@@ -25,7 +25,7 @@ public class NetworkServer
     public NetworkServer(int dim)
     {
         this.users = new HashMap<>();
-        this.model = new PlaceBoardObservable(dim);
+        this.board = new PlaceBoard(dim);
     }
 
     /**
@@ -52,7 +52,7 @@ public class NetworkServer
                 // tell the user they were logged in successfully
                 playerOutputStream.writeObject(new PlaceRequest<>(RequestType.LOGIN_SUCCESS, usernameRequest));
                 // sends the board as well since we have connected and we need to build our board
-                playerOutputStream.writeObject(new PlaceRequest<>(RequestType.BOARD, this.model.getPlaceBoard()));
+                playerOutputStream.writeObject(new PlaceRequest<>(RequestType.BOARD, this.board));
                 return true;
             }
             else
@@ -113,6 +113,7 @@ public class NetworkServer
             try
             {
                 out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.TILE_CHANGED, tile));
+                this.board.setTile(tile);
             }
             catch(IOException e)
             {

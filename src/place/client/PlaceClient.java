@@ -2,6 +2,7 @@ package place.client;
 
 import place.PlaceBoard;
 import place.PlaceException;
+import place.PlaceTile;
 import place.network.PlaceRequest;
 import place.PlaceBoardObservable;
 
@@ -27,6 +28,11 @@ public class PlaceClient {
     private synchronized boolean go()
     {
         return this.go;
+    }
+
+    private synchronized void stop()
+    {
+        this.go = false;
     }
 
     public PlaceClient(String host, int port, String username, PlaceBoardObservable model) throws PlaceException
@@ -72,15 +78,15 @@ public class PlaceClient {
             // BOARD READ-IN SEQUENCE ===============================
             if(this.go)
             {
-                PlaceRequest<?> board =  ( PlaceRequest<?> ) in.readObject();
+                PlaceRequest<?> board = ( PlaceRequest<?> ) in.readObject();
                 if(board.getType() == PlaceRequest.RequestType.BOARD)
+                {
+                    this.board = model;
                     this.board.initializeBoard( (PlaceBoard) board.getData() );
+                }
                 else
                     this.go = false;
             }
-
-            this.board = model;
-
             new Thread( () -> this.run() ).start();
         }
         catch(IOException | ClassNotFoundException e)
@@ -89,6 +95,40 @@ public class PlaceClient {
         }
     }
 
+    public void sendTile(PlaceTile tile)
+    {
+        try
+        {
+            this.out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.CHANGE_TILE, tile));
+        }
+        catch (IOException e)
+        {
+            // squash
+        }
+    }
+
+    private void tileChanged(PlaceTile tile)
+    {
+        // update the model to reflect the new tile change (so it can alert users)
+        this.board.tileChanged(tile);
+    }
+
+    private void error(String error)
+    {
+        System.err.println("Server responded with error message: \"" + error + "\"");
+        this.stop();
+    }
+
+    private void badResponse()
+    {
+        System.err.println("Bad response received from server. Terminating connection.");
+        this.stop();
+    }
+
+
+    /**
+     *
+     */
     private void run()
     {
         // this.go() is synchronized so we only do this one at a time
@@ -101,38 +141,48 @@ public class PlaceClient {
                 switch(request.getType())
                 {
                     case TILE_CHANGED:
+                        tileChanged( (PlaceTile) request.getData() );
                         break;
                     case ERROR:
+                        error( (String) request.getData() );
                         break;
                     // should not ever get these, if we get here we have to stop our client
                     case BOARD:
+                        badResponse();
                         break;
                     case LOGIN:
+                        badResponse();
                         break;
                     case LOGIN_SUCCESS:
+                        badResponse();
                         break;
                     case CHANGE_TILE:
+                        badResponse();
                         break;
+                    default:
+                        badResponse();
                 }
             }
             catch(IOException | ClassNotFoundException e)
             {
+                System.out.println("IOException!");
+                this.stop();
                 // alert the user there was an error
             }
         }
-        // yay
+        this.close();
     }
 
-
-    public void sendRequest( PlaceRequest<?> request ) throws IOException
+    public void close()
     {
-        out.writeObject(request);
-        out.flush();
-    }
-
-    public Object getRequest() throws IOException, ClassNotFoundException
-    {
-        return in.readObject();
+        try{
+            this.serverConn.close();
+        }
+        catch (IOException e)
+        {
+            // heck!
+        }
+        this.board.close();
     }
 
 }

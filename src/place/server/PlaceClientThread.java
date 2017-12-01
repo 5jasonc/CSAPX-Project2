@@ -133,7 +133,7 @@ public class PlaceClientThread extends Thread
         }
         // we have now exited the loop which means the user will be disconnecting now
         // we can close the Output and Input streams.
-        close();
+        this.close();
     }
 
     /**
@@ -146,7 +146,7 @@ public class PlaceClientThread extends Thread
     private void badRequest(String type) throws IOException
     {
         // alerts the user they sent a bad request as well as the type (if somehow we get here they are being naughty
-        // and using a custom client.
+        // and using a custom client.)
         // please don't be that person
         out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Bad request received: " + type + ". Terminating connection."));
 

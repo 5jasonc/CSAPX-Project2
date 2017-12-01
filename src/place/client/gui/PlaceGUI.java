@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 
+import place.PlaceColor;
+import place.PlaceException;
+import place.PlaceTile;
 import place.client.PlaceClient;
 import place.PlaceBoardObservable;
 
@@ -28,6 +31,10 @@ public class PlaceGUI extends Application implements Observer {
     private String username;
 
     private PlaceBoardObservable model;
+
+    private int rectSize = 90;
+
+    private PlaceColor selectedColor = PlaceColor.AQUA;
 
     private boolean go = false;
 
@@ -61,7 +68,7 @@ public class PlaceGUI extends Application implements Observer {
     {
         this.root = new BorderPane();
 
-        this.mainGrid = buildMainGrid(this.model.getDIM(), this.model.getDIM(), 90);
+        this.mainGrid = buildMainGrid(this.model.getDIM(), this.model.getDIM(), this.rectSize);
 
         // sets just a rectangle
         this.root.setCenter(mainGrid);
@@ -82,27 +89,45 @@ public class PlaceGUI extends Application implements Observer {
         for(int row = 0; row < rows; ++row)
             for(int col = 0; col < cols; ++col)
             {
-                int red = this.model.getTile(row,col).getColor().getRed();
-                int green = this.model.getTile(row,col).getColor().getGreen();
-                int blue = this.model.getTile(row,col).getColor().getBlue();
+                PlaceTile representative = this.model.getTile(row, col);
+                int r = representative.getColor().getRed();
+                int g = representative.getColor().getGreen();
+                int b = representative.getColor().getBlue();
 
-                Rectangle tile = new Rectangle(size, size, Color.rgb(red, green, blue));
+                Rectangle tile = new Rectangle(size, size, Color.rgb(r, g, b));
+
+                int tileRow = row;
+                int tileCol = col;
+
+                tile.setOnMouseClicked( (ActionEvent) -> this.client.sendTile(new PlaceTile(tileRow, tileCol, this.username, this.selectedColor, System.nanoTime())));
 
                 mainGrid.add(tile, col, row);
             }
         return mainGrid;
     }
 
-    public void update(Observable o, Object t)
+    public void update(Observable o, Object tile)
     {
         assert o == this.model : "Update call from non-model";
 
-        this.refresh();
+        if(tile instanceof PlaceTile)
+            this.refresh( (PlaceTile) tile);
+        else
+            System.err.println("Did not receive a tile to update... going to redraw board.");
     }
 
-    private void refresh()
+    private void refresh(PlaceTile tile)
     {
-        // squash
+        int row = tile.getRow();
+        int col = tile.getCol();
+
+        int r = tile.getColor().getRed();
+        int g = tile.getColor().getGreen();
+        int b = tile.getColor().getBlue();
+
+        Rectangle newTile = new Rectangle(this.rectSize, this.rectSize, Color.rgb(r,g,b));
+
+        javafx.application.Platform.runLater( () -> mainGrid.add(newTile, col, row));
     }
 
     public void stop() throws Exception

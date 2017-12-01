@@ -32,6 +32,22 @@ public class PlaceBoardObservable extends Observable
         return this.board.getTile(row, col);
     }
 
+    public void tileChanged(PlaceTile tile)
+    {
+        this.board.setTile(tile);
+
+        // set changed
+        super.setChanged();
+        // notify the observer that THIS SPECIFIC TILE HAS CHANGED (saves compute time)
+        super.notifyObservers(tile);
+    }
+
+    public void close()
+    {
+        super.setChanged();
+        super.notifyObservers();
+    }
+
     public PlaceBoard getPlaceBoard()
     {
         return this.board;
