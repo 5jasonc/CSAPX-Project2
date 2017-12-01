@@ -42,12 +42,6 @@ public class PlaceBoardObservable extends Observable
         super.notifyObservers(tile);
     }
 
-    public void close()
-    {
-        super.setChanged();
-        super.notifyObservers();
-    }
-
     public PlaceBoard getPlaceBoard()
     {
         return this.board;

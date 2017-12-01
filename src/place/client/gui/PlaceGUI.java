@@ -36,7 +36,6 @@ public class PlaceGUI extends Application implements Observer {
 
     private PlaceColor selectedColor = PlaceColor.AQUA;
 
-    private boolean go = false;
 
     /**
      * Initializes the place.client before a build of the GUI.
@@ -133,6 +132,7 @@ public class PlaceGUI extends Application implements Observer {
     public void stop() throws Exception
     {
         super.stop();
+        this.client.close();
     }
 
     public static void main(String[] args) {

@@ -182,7 +182,7 @@ public class PlaceClient {
         {
             // heck!
         }
-        this.board.close();
+        //this.board.close();
     }
 
 }
