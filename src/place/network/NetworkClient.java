@@ -1,6 +1,5 @@
 package place.network;
 
-import javafx.application.Platform;
 import place.PlaceBoard;
 import place.PlaceException;
 import place.PlaceTile;
@@ -61,6 +60,19 @@ public class NetworkClient {
         this.go = false;
     }
 
+    /**
+     * Constructor for the NetworkClient class.
+     *
+     * @param host The host String that we should connect to.
+     * @param port The port int to connect to.
+     * @param username The desired username. (WARNING: this could cause a problem if you request an already taken
+     *                 username.
+     * @param board The PlaceBoardObservable that will be used to connect the client UI to the server allowing for
+     *              update calls.
+     *
+     * @throws PlaceException If there is any exception thrown during the connect process that prevents successful
+     *                        usage of the server.
+     */
     public NetworkClient(String host, int port, String username, PlaceBoardObservable board) throws PlaceException
     {
         // BEGIN SETTING UP NEW NetworkClient
@@ -95,11 +107,11 @@ public class NetworkClient {
                     this.go = true;
                     break;
                 case ERROR:
-                    System.out.println("Failed to join Place server. Server response: " + response.getData() + ". Terminating.");
+                    System.err.println("Failed to join Place server. Server response: " + response.getData() + ".");
                     this.close();
                     throw new PlaceException("Unable to join.");
                 default:
-                    System.out.println("Bad response received. Terminating.");
+                    System.err.println("Bad response received from server.");
                     this.close();
                     throw new PlaceException("Unable to join.");
             }
@@ -116,8 +128,8 @@ public class NetworkClient {
             // if we weren't sent a board, we were given something bad, we need to escape now.
             else
             {
-                this.close();
                 this.go = false;
+                this.close();
             }
             new Thread( () -> this.run() ).start();
         }
@@ -127,21 +139,8 @@ public class NetworkClient {
         }
     }
 
-    public void sendTile(PlaceTile tile)
-    {
-        try
-        {
-            this.out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.CHANGE_TILE, tile));
-        }
-        catch (IOException e)
-        {
-            // squash
-        }
-    }
-
-
     /**
-     *
+     * The thread which continually loops listening to the server so that proper status of the board can be kept.
      */
     private void run()
     {
@@ -179,19 +178,46 @@ public class NetworkClient {
             }
             catch(IOException | ClassNotFoundException e)
             {
-                // stop the client because we've had an oops that is unrecoverable
-                Platform.exit();
+                // stop the client because we've hit an unrecoverable issue
+                this.stop();
             }
         }
         this.close();
     }
 
+    /**
+     * Used to send a tile to the server if the user has requested to change a tile.
+     *
+     * @param tile The tile that is being requested to change. (It contains all the necessary information).
+     */
+    public void sendTile(PlaceTile tile)
+    {
+        try
+        {
+            this.out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.CHANGE_TILE, tile));
+        }
+        catch (IOException e)
+        {
+            // we can't do anything with this so...
+        }
+    }
+
+    /**
+     * If a tile is changed (an item sent by the server) we note that here.
+     *
+     * @param tile The tile that has been changed.
+     */
     private void tileChanged(PlaceTile tile)
     {
         // update the model to reflect the new tile change (so it can alert users)
         this.board.tileChanged(tile);
     }
 
+    /**
+     * Tell the user we've hit an error meaning the client will quit.
+     *
+     * @param error The error message the server sent.
+     */
     private void error(String error)
     {
         System.err.println("Server responded with error message: \"" + error + "\"");
@@ -199,7 +225,7 @@ public class NetworkClient {
     }
 
     /**
-     * Tell the user we have received a bad response
+     * Tell the user we have received a bad response so they know they have disconnected.
      */
     private void badResponse()
     {

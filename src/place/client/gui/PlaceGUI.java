@@ -1,6 +1,7 @@
 package place.client.gui;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
@@ -32,9 +33,9 @@ public class PlaceGUI extends Application implements Observer {
 
     private PlaceBoardObservable model;
 
-    private int rectSize = 90;
+    private static final int rectSize = 60;
 
-    private PlaceColor selectedColor;
+    private PlaceColor selectedColor = PlaceColor.BLACK;
 
 
     private String getParamNamed( String name ) throws PlaceException
@@ -63,16 +64,30 @@ public class PlaceGUI extends Application implements Observer {
         // gets our parameters that we need (host, port, username)
         String host = getParamNamed("host");
         int port = Integer.parseInt(getParamNamed("port"));
-        this.username = getParamNamed("username");
+        this.username = getParamNamed("user");
 
         // sets our model to a new blank PlaceBoardObservable
         this.model = new PlaceBoardObservable();
 
-        // sets our network client
-        this.serverConn = new NetworkClient(host, port, username, model);
-
-        // sets our initially selected color to black
-        this.selectedColor = PlaceColor.BLACK;
+        // this is the most uncertain part, we wrap this in a try so that if it fails we can exit without opening the program
+        try
+        {
+            // sets our network client, this is the last thing we do to minimize time between receiving the board and
+            // opening the GUI
+            this.serverConn = new NetworkClient(host, port, username, model);
+        }
+        catch(PlaceException e)
+        {
+            // closes serverConn
+            this.serverConn.close();
+            // runs our stop method so that we can deconstruct anything we've built thus far
+            // this.stop();
+            // tells the user about the issue we've run into
+            System.err.println("We've hit an unrecoverable issue. Please try to launch again.");
+            System.err.println( e.getMessage() );
+            // Haults init from going any further and stops our program so we don't do anything stupid
+            System.exit(1);
+        }
     }
 
     /**
