@@ -11,8 +11,6 @@ import java.util.Map;
 
 public class NetworkServer
 {
-    //TODO server doesn't need the OBSERVABLE board, it just holds a board (we only dispatch from server) don't need to update it. That is next.
-    //          uname,  output to user
     /**
      * The Map that contains all of the currently connected users.
      * The key is a String that is the username
@@ -28,7 +26,7 @@ public class NetworkServer
     /**
      * Constructs a new NetworkServer used to communicate to Place clients.
      *
-     * THIS CONSTRUCTOR IS CALLED BY: PlaceServer
+     * THIS CONSTRUCTOR IS ONLY CALLED BY: PlaceServer
      *
      * @param dim the dimension of the board once it is set up.
      */
@@ -43,7 +41,7 @@ public class NetworkServer
     /**
      * Logs in a user. This is synchronized so we don't run into people requesting the same username at the same time.
      *
-     * THIS METHOD IS CALLED BY: PlaceClientThread
+     * THIS METHOD IS ONLY CALLED BY: PlaceClientThread
      *
      * @param usernameRequest The requested username from a user.
      * @param out The output stream for the user.
@@ -87,11 +85,11 @@ public class NetworkServer
     }
 
     /**
-     * Checks to see if a requested username is valid from a player
+     * Checks to see if a requested username is valid from a player.
      *
-     * @param usernameRequest the requested username from the user which we are checking for.
+     * @param usernameRequest The requested username from the user which we are checking for.
      *
-     * @return a boolean; true if the username is already taken, false otherwise.
+     * @return A boolean. True if the username is already taken; false otherwise.
      */
     private boolean usernameTaken(String usernameRequest)
     {
@@ -146,7 +144,8 @@ public class NetworkServer
     }
 
     /**
-     * In the event of a catastrophic server error, we tell the clients that we've experienced an error.
+     * In the event of a catastrophic server error, we tell the clients that we've experienced an error so they may
+     * shutdown gracefully.
      */
     public void serverError()
     {

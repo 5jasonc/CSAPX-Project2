@@ -15,20 +15,29 @@ import place.network.PlaceRequest.RequestType;
 
 public class PlaceClientThread extends Thread
 {
+    /**
+     * The ObjectInputStream from the client (reads the requests that the client sends to server).
+     */
     private ObjectInputStream in;
+    /**
+     * The ObjectOutputStream from the client (sends the requests that the server sends to client).
+     */
     private ObjectOutputStream out;
 
     /**
-     * A link to the NetworkServer so that
+     * A link to the NetworkServer.
      */
     private NetworkServer networkServer;
 
     /**
-     * The String that is our username
+     * The String that is our username.
      */
     private String username;
 
-    // if the connection is alive or not (used to disconnect)
+    /**
+     * The indicator to the thread whether it should keep running or not.
+     * If the thread should continue running this is true; false otherwise.
+     */
     private boolean go;
 
     /**
@@ -47,9 +56,10 @@ public class PlaceClientThread extends Thread
      *
      * @param player The player socket.
      * @param networkServer The NetworkServer so we can communicate with it.
-     * @throws PlaceException
+     *
+     * @throws PlaceException If there is an issue creating the thread
      */
-    public PlaceClientThread(Socket player, NetworkServer networkServer) throws PlaceException
+    PlaceClientThread(Socket player, NetworkServer networkServer) throws PlaceException
     {
         try
         {
@@ -98,7 +108,8 @@ public class PlaceClientThread extends Thread
                             String usernameRequest = (String) request.getData();
 
                             // attempts to login here
-                            login(usernameRequest);
+                            if(login(usernameRequest))
+                                this.username = usernameRequest;
                         }
                         break;
                     case CHANGE_TILE:
@@ -143,9 +154,9 @@ public class PlaceClientThread extends Thread
      * ****** MOVE CONTENTS TO NetworkServer ******
      * If we receive a bad request from a client, we send a similar message for each of those, which we handle here.
      *
-     * @param type the type of error that is run into for alerting user.
+     * @param type The type of error that is run into for alerting user.
      *
-     * @throws IOException if somehow we manage to get an IOException.
+     * @throws IOException If somehow we manage to get an IOException.
      */
     private void badRequest(String type) throws IOException
     {
@@ -164,13 +175,24 @@ public class PlaceClientThread extends Thread
         this.go = false;
     }
 
-    private void login(String usernameRequest)
+    /**
+     * Requests the NetworkServer to log us in.
+     *
+     * @param usernameRequest The username that we want to have.
+     *
+     * @return A boolean. True if login was successful; false otherwise.
+     */
+    private boolean login(String usernameRequest)
     {
         // attempts to login to the server
-        if(networkServer.login(usernameRequest, this.out))
-            this.username = usernameRequest;
+        return networkServer.login(usernameRequest, this.out);
     }
 
+    /**
+     * Requests the NetworkServer change the tile that user wants to change.
+     *
+     * @param tile The tile that is being requested to change.
+     */
     private void tileChangeRequest(PlaceTile tile)
     {
         // tells the networkServer we want to change a tile
