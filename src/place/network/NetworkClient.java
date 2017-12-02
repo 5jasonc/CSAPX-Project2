@@ -131,12 +131,14 @@ public class NetworkClient {
                 this.go = false;
                 this.close();
             }
-            new Thread( () -> this.run() ).start();
+            // starts the listener thread because we've built everything we need to move forward
+            new Thread(this::run).start();
         }
         catch(IOException | ClassNotFoundException e)
         {
             throw new PlaceException(e);
         }
+        // NetworkClient SETUP COMPLETE ===============================
     }
 
     /**

@@ -13,28 +13,42 @@ public class NetworkServer
 {
     //TODO server doesn't need the OBSERVABLE board, it just holds a board (we only dispatch from server) don't need to update it. That is next.
     //          uname,  output to user
+    /**
+     * The Map that contains all of the currently connected users.
+     * The key is a String that is the username
+     * The value is that user's ObjectOutputStream
+     */
     private Map<String, ObjectOutputStream> users;
+    /**
+     * The "master" PlaceBoard that is used to send to users and
+     */
     private PlaceBoard board;
 
 
     /**
      * Constructs a new NetworkServer used to communicate to Place clients.
      *
+     * THIS CONSTRUCTOR IS CALLED BY: PlaceServer
+     *
      * @param dim the dimension of the board once it is set up.
      */
     public NetworkServer(int dim)
     {
+        // creates a new HashMap that will house all of the logged in users
         this.users = new HashMap<>();
+        // this holds the "master" PlaceBoard that will be updated with every move and sent to new users
         this.board = new PlaceBoard(dim);
     }
 
     /**
      * Logs in a user. This is synchronized so we don't run into people requesting the same username at the same time.
      *
+     * THIS METHOD IS CALLED BY: PlaceClientThread
+     *
      * @param usernameRequest The requested username from a user.
-     * @param playerOutputStream The output stream for the user.
+     * @param out The output stream for the user.
      */
-    public synchronized boolean login(String usernameRequest, ObjectOutputStream playerOutputStream)
+    public synchronized boolean login(String usernameRequest, ObjectOutputStream out)
     {
         // checks if the username is taken
         // if it's not, log ourselves in and return true so user can update
@@ -44,29 +58,31 @@ public class NetworkServer
             if(!usernameTaken(usernameRequest))
             {
                 // put ourselves in the HashMap
-                users.put(usernameRequest, playerOutputStream);
+                users.put(usernameRequest, out);
 
                 // alert that user has connected
                 System.out.println("[NetworkServer]: " + usernameRequest + " has joined the server.");
 
                 // tell the user they were logged in successfully
-                playerOutputStream.writeObject(new PlaceRequest<>(RequestType.LOGIN_SUCCESS, usernameRequest));
+                out.writeObject(new PlaceRequest<>(RequestType.LOGIN_SUCCESS, usernameRequest));
                 // sends the board as well since we have connected and we need to build our board
-                playerOutputStream.writeObject(new PlaceRequest<>(RequestType.BOARD, this.board));
+                out.writeObject(new PlaceRequest<>(RequestType.BOARD, this.board));
+                // return true iff login was successful
                 return true;
             }
             else
             {
                 // tell the user the username is taken
-                playerOutputStream.writeObject(new PlaceRequest<>(RequestType.ERROR, "Username taken."));
+                out.writeObject(new PlaceRequest<>(RequestType.ERROR, "Username taken."));
             }
             // write our result out (doesn't matter which because either way we need to send something)
-            playerOutputStream.flush();
+            out.flush();
         }
         catch(IOException e)
         {
-            // heck what do we do here??
+            // oops
         }
+        // if login fails, we let the PlaceClientThread
         return false;
     }
 
@@ -86,6 +102,8 @@ public class NetworkServer
     /**
      * Logs a user out. Doesn't need to be synchronized since we won't have multiple people logged in with the same
      * username trying to log out.
+     *
+     * THIS CONSTRUCTOR IS CALLED BY: PlaceClientThread
      *
      * @param username The username of the user wishing to log out.
      */
@@ -108,16 +126,44 @@ public class NetworkServer
      */
     public synchronized void tileChangeRequest(PlaceTile tile)
     {
+        // creates our changedTile request to send to all users
+        PlaceRequest<PlaceTile> changedTile = new PlaceRequest<>(PlaceRequest.RequestType.TILE_CHANGED, tile);
+        // loops through each user that is currently connected
         for( ObjectOutputStream out : users.values() )
         {
             try
             {
-                out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.TILE_CHANGED, tile));
+                // writes out our changed tile
+                out.writeObject(changedTile);
+                // sets the place in the board that was just changed
                 this.board.setTile(tile);
             }
             catch(IOException e)
             {
-                // squash
+                // oops
+            }
+        }
+    }
+
+    /**
+     * In the event of a catastrophic server error, we tell the clients that we've experienced an error.
+     */
+    public void serverError()
+    {
+        // creates our error request to send to all users
+        PlaceRequest<String> error = new PlaceRequest<>(PlaceRequest.RequestType.ERROR,
+                "The server has hit an unrecoverable error.");
+        // loops through each user that is currently connected
+        for( ObjectOutputStream out : users.values() )
+        {
+            try
+            {
+                // write out our error to all clients
+                out.writeObject(error);
+            }
+            catch(IOException e)
+            {
+                // oops
             }
         }
     }

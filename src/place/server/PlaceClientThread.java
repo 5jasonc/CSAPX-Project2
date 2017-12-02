@@ -18,15 +18,24 @@ public class PlaceClientThread extends Thread
     private ObjectInputStream in;
     private ObjectOutputStream out;
 
-    private PlaceServer server;
-
+    /**
+     * A link to the NetworkServer so that
+     */
     private NetworkServer networkServer;
 
+    /**
+     * The String that is our username
+     */
     private String username;
 
     // if the connection is alive or not (used to disconnect)
     private boolean go;
 
+    /**
+     * Getter that is used by run to tell if it should keep going.
+     *
+     * @return A boolean. True if this.go is set to true; false otherwise.
+     */
     private synchronized boolean go()
     {
         return this.go;
@@ -37,11 +46,10 @@ public class PlaceClientThread extends Thread
      * Constructs a new thread for a player once they connect to the server.
      *
      * @param player The player socket.
-     * @param server The server as a PlaceServer (might not be needed).
      * @param networkServer The NetworkServer so we can communicate with it.
      * @throws PlaceException
      */
-    public PlaceClientThread(Socket player, PlaceServer server, NetworkServer networkServer) throws PlaceException
+    public PlaceClientThread(Socket player, NetworkServer networkServer) throws PlaceException
     {
         try
         {
@@ -49,11 +57,9 @@ public class PlaceClientThread extends Thread
             this.out = new ObjectOutputStream(player.getOutputStream());
             // sets the ObjectInputStream
             this.in = new ObjectInputStream( player.getInputStream() );
-            // sets the server
-            this.server = server;
             // sets the networkServer
             this.networkServer = networkServer;
-
+            // sets go to true so we can begin
             this.go = true;
         }
         // if we catch these exceptions
@@ -62,12 +68,6 @@ public class PlaceClientThread extends Thread
             // we throw them out to server
             throw new PlaceException(e);
         }
-    }
-
-    // probably won't be needed but I wrote it just in case
-    String getUsername()
-    {
-        return this.username;
     }
 
     /**
@@ -96,16 +96,14 @@ public class PlaceClientThread extends Thread
                         {
                             // set our username
                             String usernameRequest = (String) request.getData();
-                            // attempts to login here
-                            boolean loginSuccess = networkServer.login(usernameRequest, this.out);
 
-                            if(loginSuccess)
-                                this.username = usernameRequest;
+                            // attempts to login here
+                            login(usernameRequest);
                         }
                         break;
                     case CHANGE_TILE:
                         // lets the networkServer know of a new tile change request
-                        networkServer.tileChangeRequest( (PlaceTile) request.getData() );
+                        tileChangeRequest( (PlaceTile) request.getData() );
                         break;
                     // we shouldn't ever receive these from the player...
                     case BOARD:
@@ -142,6 +140,7 @@ public class PlaceClientThread extends Thread
     }
 
     /**
+     * ****** MOVE CONTENTS TO NetworkServer ******
      * If we receive a bad request from a client, we send a similar message for each of those, which we handle here.
      *
      * @param type the type of error that is run into for alerting user.
@@ -163,6 +162,19 @@ public class PlaceClientThread extends Thread
         out.flush();
         // terminate thread
         this.go = false;
+    }
+
+    private void login(String usernameRequest)
+    {
+        // attempts to login to the server
+        if(networkServer.login(usernameRequest, this.out))
+            this.username = usernameRequest;
+    }
+
+    private void tileChangeRequest(PlaceTile tile)
+    {
+        // tells the networkServer we want to change a tile
+        networkServer.tileChangeRequest(tile);
     }
 
 
