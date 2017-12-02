@@ -21,8 +21,6 @@ import place.PlaceBoardObservable;
 
 public class PlaceGUI extends Application implements Observer {
 
-    private BorderPane root;
-
     private GridPane mainGrid;
 
     private Map< String, String > parameters;
@@ -33,10 +31,9 @@ public class PlaceGUI extends Application implements Observer {
 
     private PlaceBoardObservable model;
 
-    private static final int rectSize = 60;
-
     private PlaceColor selectedColor = PlaceColor.BLACK;
 
+    private static final int RECT_SIZE = 70;
 
     private String getParamNamed( String name ) throws PlaceException
     {
@@ -48,6 +45,7 @@ public class PlaceGUI extends Application implements Observer {
             throw new PlaceException("Can't find parameter named " + name);
         // otherwise we return the one as named.
         else
+            // gets the parameter with name name
             return parameters.get( name );
     }
 
@@ -94,27 +92,40 @@ public class PlaceGUI extends Application implements Observer {
      * Constructs our GUI and then displays it at the end
      *
      * @param primaryStage the stage that we are showing our GUI upon.
+     *
+     * @throws Exception If any sort of exception is hit.
      */
     @Override
     public void start(Stage primaryStage) throws Exception
     {
-        this.root = new BorderPane();
-
-        this.mainGrid = buildMainGrid(this.model.getDIM(), this.model.getDIM(), this.rectSize);
+        // creates a blank BorderPane
+        BorderPane root = new BorderPane();
 
         // sets just a rectangle
-        this.root.setCenter(mainGrid);
+        root.setCenter( this.mainGrid = buildMainGrid( this.model.getDIM(), this.model.getDIM(), RECT_SIZE ) );
 
+        // add ourselves as an observer of the model
         this.model.addObserver(this);
 
+        // starts the thread that NetworkClient uses to listen to the server
+        // this allows the client to start up completely before any tile changes that occurred between launch(args) and
+        // addObserver(this) are acknowledged
+        // essentially this creates a sort of Queue in the ObjectInputStream from NetworkClient of any "TILE_CHANGED"s
+        // the updates will begin immediately after this
+        this.serverConn.start();
+
         // sets our scene
-        primaryStage.setScene(new Scene(this.root));
+        primaryStage.setScene(new Scene(root));
+
+        // sets the title of our window
+        primaryStage.setTitle("Place");
 
         // we have now completed building our GUI, we can show it
+        // anything we change in the GUI after this MUST be used with runLater( ... )
         primaryStage.show();
     }
 
-    public GridPane buildMainGrid(int rows, int cols, int size)
+    private GridPane buildMainGrid(int rows, int cols, int size)
     {
         // creates a new GridPane that will house our board
         GridPane mainGrid = new GridPane();
@@ -171,7 +182,7 @@ public class PlaceGUI extends Application implements Observer {
         PlaceColor tileColor = tile.getColor();
 
         // create our new rectangle to be put in place of the old one
-        Rectangle changedTile = new Rectangle(this.rectSize, this.rectSize, Color.rgb(tileColor.getRed(),tileColor.getGreen(),tileColor.getBlue()));
+        Rectangle changedTile = new Rectangle(RECT_SIZE, RECT_SIZE, Color.rgb(tileColor.getRed(),tileColor.getGreen(),tileColor.getBlue()));
 
         // using runLater to join this method with the JavaFX thread
         // set our tile in its correct place

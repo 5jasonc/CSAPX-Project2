@@ -131,14 +131,25 @@ public class NetworkClient {
                 this.go = false;
                 this.close();
             }
-            // starts the listener thread because we've built everything we need to move forward
-            new Thread(this::run).start();
         }
         catch(IOException | ClassNotFoundException e)
         {
             throw new PlaceException(e);
         }
         // NetworkClient SETUP COMPLETE ===============================
+    }
+
+    /**
+     * This start method is so that handling tile change requests in the client work properly.
+     *
+     * Scenario:
+     * When a client is starting to build everything, if another user makes a request during that very minimal time,
+     * the NetworkClient class won't alert the PlaceBoardObservable until AFTER the thread is begun.
+     */
+    public void start()
+    {
+        // starts the listener thread because we've built everything in client and need to move forward
+        new Thread(this::run).start();
     }
 
     /**
@@ -151,8 +162,9 @@ public class NetworkClient {
         {
             try
             {
+                // reads the next request from the buffer
                 PlaceRequest<?> request = ( PlaceRequest<?> ) this.in.readObject();
-
+                // determines which type of request was given
                 switch(request.getType())
                 {
                     case TILE_CHANGED:
@@ -184,6 +196,7 @@ public class NetworkClient {
                 this.stop();
             }
         }
+        // closes everything because we've left the thread loop and that means we're over
         this.close();
     }
 
@@ -196,7 +209,10 @@ public class NetworkClient {
     {
         try
         {
+            // write the tile to the output buffer
             this.out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.CHANGE_TILE, tile));
+            // flushes the object written out
+            out.flush();
         }
         catch (IOException e)
         {
@@ -249,7 +265,7 @@ public class NetworkClient {
         }
         catch (IOException e)
         {
-            // heck!
+            // oops
         }
     }
 

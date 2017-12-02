@@ -113,8 +113,15 @@ public class PlaceClientThread extends Thread
                         }
                         break;
                     case CHANGE_TILE:
-                        // lets the networkServer know of a new tile change request
-                        tileChangeRequest( (PlaceTile) request.getData() );
+                        PlaceTile tile = (PlaceTile) request.getData();
+                        // checks to make sure a move is valid then lets the networkServer know of a new tile change
+                        // request
+                        if(networkServer.isValid(tile))
+                        {
+                            System.out.println("[PlaceClientThread]: " + this.username + " has changed a tile.");
+                            System.out.println("\tNew tile: " + tile);
+                            tileChangeRequest(tile);
+                        }
                         break;
                     // we shouldn't ever receive these from the player...
                     case BOARD:

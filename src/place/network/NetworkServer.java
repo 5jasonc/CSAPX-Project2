@@ -114,6 +114,11 @@ public class NetworkServer
         System.out.println("[NetworkServer]: " + username + " has left the server.");
     }
 
+    public boolean isValid(PlaceTile tile)
+    {
+        return this.board.isValid(tile);
+    }
+
     /**
      * Alerts all of the users who are logged in that a new tile change request has occurred. It is synchronized so that
      * if multiple users send a move for the same tile at the same time we don't have mismatched boards.
