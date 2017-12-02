@@ -3,8 +3,7 @@ package place.client.gui;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
@@ -22,6 +21,8 @@ import place.PlaceBoardObservable;
 public class PlaceGUI extends Application implements Observer {
 
     private GridPane mainGrid;
+
+    private HBox colorBar;
 
     private Map< String, String > parameters;
 
@@ -104,6 +105,8 @@ public class PlaceGUI extends Application implements Observer {
         // sets just a rectangle
         root.setCenter( this.mainGrid = buildMainGrid( this.model.getDIM(), this.model.getDIM(), RECT_SIZE ) );
 
+        root.setBottom( this.colorBar = buildColorBar(this.model.getDIM()) );
+
         // add ourselves as an observer of the model
         this.model.addObserver(this);
 
@@ -160,6 +163,26 @@ public class PlaceGUI extends Application implements Observer {
         return mainGrid;
     }
 
+    private HBox buildColorBar( int boardDIM )
+    {
+        HBox toReturn = new HBox();
+
+        for( PlaceColor color : PlaceColor.values() )
+        {
+            Rectangle temp = new Rectangle(25, 25, Color.rgb(color.getRed(), color.getGreen(), color.getBlue()));
+            temp.setOnMouseClicked( (event) -> this.selectedColor = color );
+            toReturn.getChildren().add(temp);
+        }
+
+        return toReturn;
+    }
+
+    private StackPane generateRectangle()
+    {
+        StackPane stack = new StackPane();
+        return null;
+    }
+
     public void update(Observable o, Object tile)
     {
         // makes sure our Observable is the one we want (if it's not then we are screwed)
@@ -183,6 +206,13 @@ public class PlaceGUI extends Application implements Observer {
 
         // create our new rectangle to be put in place of the old one
         Rectangle changedTile = new Rectangle(RECT_SIZE, RECT_SIZE, Color.rgb(tileColor.getRed(),tileColor.getGreen(),tileColor.getBlue()));
+
+        // set a new event handler
+        changedTile.setOnMouseClicked(
+                (ActionEvent) -> this.serverConn.sendTile(
+                        new PlaceTile(tile.getRow(), tile.getCol(), this.username, this.selectedColor, System.nanoTime())
+                )
+        );
 
         // using runLater to join this method with the JavaFX thread
         // set our tile in its correct place
