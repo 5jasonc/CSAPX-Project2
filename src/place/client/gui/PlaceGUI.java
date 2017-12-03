@@ -1,13 +1,18 @@
 package place.client.gui;
 
 import javafx.application.Application;
-import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Scene;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 import java.util.Observer;
 import java.util.Observable;
@@ -20,9 +25,13 @@ import place.PlaceBoardObservable;
 
 public class PlaceGUI extends Application implements Observer {
 
-    private GridPane mainGrid;
+    private static final int RECT_SIZE = 70;
 
-    private HBox colorBar;
+    private static final int BOTTOM_GAPS = 7;
+
+    private Scene scene;
+
+    private GridPane mainGrid;
 
     private Map< String, String > parameters;
 
@@ -33,8 +42,6 @@ public class PlaceGUI extends Application implements Observer {
     private PlaceBoardObservable model;
 
     private PlaceColor selectedColor = PlaceColor.BLACK;
-
-    private static final int RECT_SIZE = 70;
 
     private String getParamNamed( String name ) throws PlaceException
     {
@@ -52,7 +59,9 @@ public class PlaceGUI extends Application implements Observer {
 
 
     /**
-     * Initializes the place.client before a build of the GUI.
+     * Initializes the client before a build of the GUI.
+     *
+     * @throws Exception If any sort of exception is hit while trying to initialize the GUI.
      */
     @Override
     public void init() throws Exception
@@ -82,10 +91,7 @@ public class PlaceGUI extends Application implements Observer {
             // runs our stop method so that we can deconstruct anything we've built thus far
             // this.stop();
             // tells the user about the issue we've run into
-            System.err.println("We've hit an unrecoverable issue. Please try to launch again.");
-            System.err.println( e.getMessage() );
-            // Haults init from going any further and stops our program so we don't do anything stupid
-            System.exit(1);
+            throw e;
         }
     }
 
@@ -93,19 +99,18 @@ public class PlaceGUI extends Application implements Observer {
      * Constructs our GUI and then displays it at the end
      *
      * @param primaryStage the stage that we are showing our GUI upon.
-     *
-     * @throws Exception If any sort of exception is hit.
      */
     @Override
-    public void start(Stage primaryStage) throws Exception
+    public void start(Stage primaryStage)
     {
         // creates a blank BorderPane
         BorderPane root = new BorderPane();
 
-        // sets just a rectangle
-        root.setCenter( this.mainGrid = buildMainGrid( this.model.getDIM(), this.model.getDIM(), RECT_SIZE ) );
+        // sets our mainGrid in place
+        root.setCenter( this.mainGrid = buildMainGrid( this.model.getDIM(), this.model.getDIM() ) );
 
-        root.setBottom( this.colorBar = buildColorBar(this.model.getDIM()) );
+        // builds our color selection FlowPane
+        root.setTop( buildColorBar() );
 
         // add ourselves as an observer of the model
         this.model.addObserver(this);
@@ -117,23 +122,40 @@ public class PlaceGUI extends Application implements Observer {
         // the updates will begin immediately after this
         this.serverConn.start();
 
+        // saves our scene
+        this.scene = new Scene(root);
+
         // sets our scene
-        primaryStage.setScene(new Scene(root));
+        primaryStage.setScene(this.scene);
 
         // sets the title of our window
-        primaryStage.setTitle("Place");
+        primaryStage.setTitle("k/Place: " + this.username);
+
+        // sets our stage to be without the OS dependent control system
+        // we can now use our own style
+        // primaryStage.initStyle(StageStyle.UNDECORATED);
+
+        // makes it so the user cannot rescale the window
+        primaryStage.setResizable(false);
 
         // we have now completed building our GUI, we can show it
         // anything we change in the GUI after this MUST be used with runLater( ... )
         primaryStage.show();
     }
 
-    private GridPane buildMainGrid(int rows, int cols, int size)
+
+    private GridPane buildMainGrid(int rows, int cols)
     {
         // creates a new GridPane that will house our board
         GridPane mainGrid = new GridPane();
 
-        // goes through each tile
+        // sets the background color to black so we have a nice faux border around us
+        mainGrid.setStyle("-fx-background-color:#000;");
+
+        // sets the padding of the main GridPane so there is a border to it (makes it look nice)
+        mainGrid.setPadding( new Insets(0, 5, 5, 5) );
+
+        // goes through each tile since we are setting up our board for the first time
         for(int row = 0; row < rows; ++row)
         {
             for (int col = 0; col < cols; ++col)
@@ -142,45 +164,79 @@ public class PlaceGUI extends Application implements Observer {
                 int tileRow = row;
                 int tileCol = col;
 
+                PlaceTile tile = this.model.getTile(row, col);
+
                 // gets the color of our tile that we are currently setting
-                PlaceColor tileColor = this.model.getTile(row, col).getColor();
+                PlaceColor tileColor = tile.getColor();
 
                 // generates our tile as a rectangle
-                Rectangle tile = new Rectangle(size, size, Color.rgb(tileColor.getRed(), tileColor.getGreen(), tileColor.getBlue()));
+                Rectangle tileRectangle = new Rectangle(RECT_SIZE, RECT_SIZE, Color.rgb(tileColor.getRed(), tileColor.getGreen(), tileColor.getBlue()));
+
+                // formats the date
+                SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yy");
+                String date = dateFormat.format(new Date(tile.getTime()));
+                SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+                String time = timeFormat.format(new Date(tile.getTime()));
+                Tooltip t = new Tooltip("("+ tileRow + ", " + tileCol + ")\n" + tile.getOwner() +
+                        "\n" + date + "\n" + time);
+                // installs the tooltip on the rectangle
+                Tooltip.install(tileRectangle, t);
 
                 // sets an event listener to our rectangle to listen for clicks on this tile
-                tile.setOnMouseClicked(
+                tileRectangle.setOnMouseClicked(
                         (ActionEvent) -> this.serverConn.sendTile(
-                            new PlaceTile(tileRow, tileCol, this.username, this.selectedColor, System.nanoTime())
+                            new PlaceTile(tileRow, tileCol, this.username, this.selectedColor, System.currentTimeMillis())
                         )
                 );
 
+
                 // add our tile to the mainGrid ( USING JAVA'S STUPID COLUMN, ROW SYSTEM WHO THE HECK DOES THAT?!?!?! )
-                mainGrid.add(tile, col, row);
+                mainGrid.add(tileRectangle, col, row);
             }
         }
         // returns our constructed mainGrid
         return mainGrid;
     }
 
-    private HBox buildColorBar( int boardDIM )
+    private FlowPane buildColorBar()
     {
-        HBox toReturn = new HBox();
+        FlowPane colorBar = new FlowPane(BOTTOM_GAPS, BOTTOM_GAPS);
 
+        colorBar.setStyle("-fx-background-color: #000;");
+
+        colorBar.setAlignment(Pos.CENTER);
+
+        colorBar.setPadding(new Insets(10, 5, 10, 5));
+
+        // builds all of our color choices into rectangles
         for( PlaceColor color : PlaceColor.values() )
         {
-            Rectangle temp = new Rectangle(25, 25, Color.rgb(color.getRed(), color.getGreen(), color.getBlue()));
-            temp.setOnMouseClicked( (event) -> this.selectedColor = color );
-            toReturn.getChildren().add(temp);
+            // creates a new Rectangle Object with size RECT_SIZE/2, RECT_SIZE/2, and bg color according to color
+            Rectangle colorChoice = new Rectangle(RECT_SIZE/2, RECT_SIZE/2,
+                    Color.rgb(color.getRed(), color.getGreen(), color.getBlue()));
+            // sets the border stroke to LIGHTGREY
+            colorChoice.setStroke(Color.LIGHTGREY);
+            // sets the corners to have an arc of 10px
+            colorChoice.setArcHeight(5);
+            colorChoice.setArcWidth(5);
+            // when the color is changes, our selected color is changed to color
+            colorChoice.setOnMouseClicked( (EventAction) -> this.setColor(color));
+
+            // change our cursor to be a POINTER as it's known in the CSS world
+            colorChoice.setOnMouseEntered( (EventAction) -> scene.setCursor(Cursor.HAND) );
+            // change our cursor back to default when the mouse leaves
+            colorChoice.setOnMouseExited( (EventAction) -> scene.setCursor(Cursor.DEFAULT) );
+
+            // adds the rectangle to the colorBar
+            colorBar.getChildren().add(colorChoice);
         }
 
-        return toReturn;
+        return colorBar;
     }
 
-    private StackPane generateRectangle()
+    private void setColor(PlaceColor color)
     {
-        StackPane stack = new StackPane();
-        return null;
+
     }
 
     public void update(Observable o, Object tile)
@@ -210,7 +266,7 @@ public class PlaceGUI extends Application implements Observer {
         // set a new event handler
         changedTile.setOnMouseClicked(
                 (ActionEvent) -> this.serverConn.sendTile(
-                        new PlaceTile(tile.getRow(), tile.getCol(), this.username, this.selectedColor, System.nanoTime())
+                        new PlaceTile(tile.getRow(), tile.getCol(), this.username, this.selectedColor, System.currentTimeMillis())
                 )
         );
 
@@ -236,6 +292,17 @@ public class PlaceGUI extends Application implements Observer {
             System.err.println("$ java PlaceGUI --host=(host IP/URL) --port=(port) --user=(username)");
         }
         else
-            Application.launch(args);
+        {
+            try
+            {
+                // attempts to launch the client
+                Application.launch(args);
+            }
+            catch(Exception e)
+            {
+                System.err.println("We've hit an unrecoverable issue. Please try to launch again.");
+                System.err.println( e.getMessage() );
+            }
+        }
     }
 }
