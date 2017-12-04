@@ -153,7 +153,7 @@ public class PlaceGUI extends Application implements Observer {
         mainGrid.setStyle("-fx-background-color:#000;");
 
         // sets the padding of the main GridPane so there is a border to it (makes it look nice)
-        mainGrid.setPadding( new Insets(0, 5, 5, 5) );
+        mainGrid.setPadding( new Insets(0, 15, 15, 25) );
 
         // goes through each tile since we are setting up our board for the first time
         for(int row = 0; row < rows; ++row)
@@ -220,7 +220,7 @@ public class PlaceGUI extends Application implements Observer {
             colorChoice.setArcHeight(5);
             colorChoice.setArcWidth(5);
             // when the color is changes, our selected color is changed to color
-            colorChoice.setOnMouseClicked( (EventAction) -> this.setColor(color));
+            colorChoice.setOnMouseClicked( (EventAction) -> this.setColor(color) );
 
             // change our cursor to be a POINTER as it's known in the CSS world
             colorChoice.setOnMouseEntered( (EventAction) -> scene.setCursor(Cursor.HAND) );
@@ -236,7 +236,7 @@ public class PlaceGUI extends Application implements Observer {
 
     private void setColor(PlaceColor color)
     {
-
+        this.selectedColor = color;
     }
 
     public void update(Observable o, Object tile)
@@ -279,6 +279,7 @@ public class PlaceGUI extends Application implements Observer {
     {
         // when the program closes we close our NetworkClient so it knows to stop executing and log us out
         super.stop();
+        // indicates to serverConn that it should close
         this.serverConn.close();
     }
 
