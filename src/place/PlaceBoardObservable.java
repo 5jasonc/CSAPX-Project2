@@ -59,6 +59,10 @@ public class PlaceBoardObservable extends Observable
         return this.board.getTile(row, col);
     }
 
+    public PlaceBoard getBoard() {
+        return this.board;
+    }
+
     /**
      * When a PlaceTile gets changed this method is invoked so that observers can update their view. (The "model" aspect
      * of Place).

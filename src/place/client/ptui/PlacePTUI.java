@@ -1,115 +1,102 @@
 package place.client.ptui;
 
-import javafx.application.Platform;
-import place.PlaceBoard;
-import place.network.NetworkServer;
-import place.network.PlaceRequest;
+import place.PlaceBoardObservable;
+import place.PlaceException;
+import place.network.NetworkClient;
 
 import java.io.*;
-import java.net.Socket;
-import java.util.List;
-import java.util.Observable;
-import java.util.Observer;
-import java.util.Scanner;
+import java.util.*;
 
 /**
     Class that contains the plain text client that will connect to place server
     @ Jason Streeter
+    @ Kevin
  */
 
 public class PlacePTUI extends ConsoleApplication implements Observer
 {
+    private List<String> parameters;
+
     private String username;
 
-    private PlaceBoard board;
+    private PlaceBoardObservable board;
 
-    private NetworkServer server;
-
-    private Socket serverConn;
-
-    private ObjectInputStream in;
-
-    private ObjectOutputStream out;
+    private NetworkClient serverConn;
 
     private boolean go = false;
 
     /**
-     * Initializes client before creating GUI
+     * Method used to get the named parameters from the command line arguments
+     * @param name The string name of the parameter you need to get
+     * @return the parameter needed from the List
+     * @throws PlaceException k
+     */
+    private String getParamNamed(String name) throws PlaceException {
+        // gets parameters from ConsoleApplication
+        if(parameters == null) { parameters = super.getArguments(); }
+        // checks for argument, throws an error if it is missing
+        if(!parameters.contains(name)) { throw new PlaceException("Can't find parameter named " + name); }
+        // otherwise get named parameter
+        else { return parameters.get(parameters.indexOf(name)); }
+    }
+
+    /**
+     * Initializes client before doing anything with model of our board
      */
     @Override
-    public void init() {
-        // Takes command line arguments and creates client socket and necessary client information
-        List<String> args = super.getArguments();
-        String hostname = args.get(0);
-        int port = Integer.parseInt(args.get(1));
-        username = args.get(2);
+    public void init() throws Exception {
+        super.init();
+
+        // Get named command line arguments to be used
+        username = getParamNamed("user");
+        String hostname = getParamNamed("host");
+        int port = Integer.parseInt(getParamNamed("port"));
+
+        System.out.println("Creating board");
+        // Creates blank model for board
+        board = new PlaceBoardObservable();
 
         try {
-            // Connects to server
-            serverConn = new Socket(hostname, port);
-
-            // Initializes input and output with Place server
-            in = new ObjectInputStream(serverConn.getInputStream());
-            out = new ObjectOutputStream(serverConn.getOutputStream());
-
-            // send out our login place request immediately
-            out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.LOGIN, this.username));
-
-            try {
-                // read in our first object (should be PlaceRequest<String> with username or ERROR)
-                PlaceRequest<?> request = (PlaceRequest<?>) in.readObject();
-
-                switch (request.getType()) {
-                    case LOGIN_SUCCESS:
-                        System.out.println("Successfully joined Place server as \"" + request.getData() + "\".");
-                        this.go = true;
-                        break;
-                    case ERROR:
-                        System.out.println("Failed to join Place server. Reason: " + request.getData() + ". Terminating.");
-                        Platform.exit();
-                        break;
-                    default:
-                        System.out.println("Unknown response received. Terminating.");
-                        Platform.exit();
-                        // unknown response, terminate
-                }
-
-                if (this.go) {
-                    // read in our next object
-                    request = (PlaceRequest<?>) in.readObject();
-
-                    // read in our board checking to make sure it really is a board
-                    if (request.getType() == PlaceRequest.RequestType.BOARD)
-                        this.board = (PlaceBoard) request.getData();
-                }
-            }
-            catch(ClassNotFoundException e) {
-                // ?????? needed for in.readObject()
-                System.err.println("Class not found...");
-                System.exit(1);
-            }
+            System.out.println("connection");
+            // Connects with the NetworkClient to communicate with PlaceServer
+            serverConn = new NetworkClient(hostname, port, username, board);
         }
-        catch(IOException e) {
+        catch(Exception e) {
             System.err.println("Error connecting with Place server...");
+            System.err.println(e.getMessage());
             System.exit(1);
         }
     }
 
-    @Override
-    public synchronized void go(Scanner in, PrintWriter out) {
 
+
+    /**
+     * Constructs the board we will use and then prints it out
+     * @param in Scanner that reads the user's input
+     * @param out Communication with PlaceServer
+     */
+    @Override
+    public synchronized void go(Scanner in, PrintWriter out) throws Exception {
+        // make PTUI an observer of the board
+        board.addObserver(this);
+
+        // begins thread for NetworkClient to listen to server
+        serverConn.start();
+
+        // Display current board now it has been built
+        System.out.println(toString());
     }
 
     @Override
     public void stop() {
-
+        super.stop();
+        serverConn.close();
     }
 
     @Override
     public void update(Observable o, Object arg) {
 
     }
-
 
     public static void main(String[] args) {
         // Checks for proper command line arguments
@@ -118,6 +105,12 @@ public class PlacePTUI extends ConsoleApplication implements Observer
             System.exit(1);
         }
 
+        
         ConsoleApplication.launch(PlacePTUI.class, args);
+    }
+
+    @Override
+    public String toString() {
+        return "to string called...";
     }
 }

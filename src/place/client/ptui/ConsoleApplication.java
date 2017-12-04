@@ -1,5 +1,7 @@
 package place.client.ptui;
 
+import place.PlaceException;
+
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.Arrays;
@@ -26,6 +28,7 @@ import java.util.Scanner;
  * returns, {@link #stop() stop} is executed.
  *
  * @author James Heliotis
+ * Edits made by Jason Streeter
  */
 public abstract class ConsoleApplication {
 
@@ -92,12 +95,16 @@ public abstract class ConsoleApplication {
             ptuiApp.cmdLineArgs = Arrays.copyOf( args, args.length );
 
             try {
+                System.out.println("init");
                 ptuiApp.init();
+                System.out.println("event thread creation");
                 ptuiApp.eventThread = new Thread( new Runner( ptuiApp ) );
+                System.out.println("starting");
                 ptuiApp.eventThread.start();
+                System.out.println("joining");
                 ptuiApp.eventThread.join();
             }
-            catch( InterruptedException ie ) {
+            catch( Exception ie ) {
                 System.err.println( "Console event thread interrupted" );
             }
             finally {
@@ -121,22 +128,17 @@ public abstract class ConsoleApplication {
         public void run() {
             // We don't put the PrintWriter in try-with-resources because
             // we don't want it to be closed. The Scanner can close.
-            PrintWriter out = null;
+            PrintWriter out;
             try ( Scanner consoleIn = new Scanner( System.in ) ) {
-                do {
-                    try {
-                        out = new PrintWriter(
-                                new OutputStreamWriter( System.out ), true );
-                        ptuiApp.go( consoleIn, out );
-                        out = null;
-                    }
-                    catch( Exception e ) {
-                        e.printStackTrace();
-                        if ( out != null ) {
-                            out.println( "\nRESTARTING...\n" );
-                        }
-                    }
-                } while ( out != null );
+                try {
+                    out = new PrintWriter(
+                            new OutputStreamWriter( System.out ), true );
+                    ptuiApp.go( consoleIn, out );
+                    //out = null;
+                }
+                catch( Exception e ) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -154,7 +156,7 @@ public abstract class ConsoleApplication {
      * A do-nothing setup method that can be overwritten by subclasses
      * when necessary
      */
-    public void init() {}
+    public void init() throws Exception {}
 
     /**
      * The method that is expected to run the main loop of the console
@@ -167,7 +169,7 @@ public abstract class ConsoleApplication {
      * @param consoleIn  the source of the user input
      * @param consoleOut the destination where text output should be printed
      */
-    public abstract void go( Scanner consoleIn, PrintWriter consoleOut );
+    public abstract void go( Scanner consoleIn, PrintWriter consoleOut ) throws Exception;
 
     /**
      * A do-nothing teardown method that can be overwritten by subclasses
