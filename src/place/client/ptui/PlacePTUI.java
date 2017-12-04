@@ -46,7 +46,8 @@ public class PlacePTUI extends ConsoleApplication implements Observer
             // Connects with the NetworkClient to communicate with PlaceServer
             serverConn = new NetworkClient(hostname, port, this.username, model);
         }
-        catch(Exception e) {
+        catch(Exception e)
+        {
             System.err.println("Error connecting with Place server...");
             System.err.println(e.getMessage());
             System.exit(1);
@@ -79,7 +80,8 @@ public class PlacePTUI extends ConsoleApplication implements Observer
     }
 
     @Override
-    public void update(Observable o, Object arg) {
+    public void update(Observable o, Object arg)
+    {
 
     }
 

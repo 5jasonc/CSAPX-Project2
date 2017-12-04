@@ -59,7 +59,7 @@ public class NetworkServer
                 users.put(usernameRequest, out);
 
                 // alert that user has connected
-                System.out.println("[NetworkServer]: " + usernameRequest + " has joined the server.");
+                System.out.println("[Server]: " + usernameRequest + " has joined the server.");
 
                 // tell the user they were logged in successfully
                 out.writeObject(new PlaceRequest<>(RequestType.LOGIN_SUCCESS, usernameRequest));
