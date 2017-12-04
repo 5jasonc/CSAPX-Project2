@@ -5,6 +5,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -86,6 +87,8 @@ public class PlaceGUI extends Application implements Observer {
             // tells the user about the issue we've run into
             throw e;
         }
+        // add ourselves as an observer of the model
+        this.model.addObserver(this);
     }
 
     /**
@@ -106,9 +109,6 @@ public class PlaceGUI extends Application implements Observer {
         root.setCenter( this.mainGrid = buildMainGrid( this.model.getDIM(), this.model.getDIM() ) );
 
         root.setLeft( buildTilePreviewVBox() );
-
-        // add ourselves as an observer of the model
-        this.model.addObserver(this);
 
         // starts the thread that NetworkClient uses to listen to the server
         // this allows the client to start up completely before any tile changes that occurred between launch(args) and
@@ -133,6 +133,8 @@ public class PlaceGUI extends Application implements Observer {
         // makes it so the user cannot rescale the window
         primaryStage.setResizable(false);
 
+        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("PlaceIcon.png")));
+
         // we have now completed building our GUI, we can show it
         // anything we change in the GUI after this MUST be used with runLater( ... )
         primaryStage.show();
@@ -145,7 +147,7 @@ public class PlaceGUI extends Application implements Observer {
         GridPane mainGrid = new GridPane();
 
         // sets the padding of the main GridPane so there is a border to it (makes it look nice)
-        mainGrid.setPadding( new Insets(0, 15, 15, 15) );
+        mainGrid.setPadding( new Insets(0, 10, 10, 15) );
 
         // sets the background color to black so we have a nice faux border around us
         mainGrid.setStyle("-fx-background-color:#000;");
@@ -269,8 +271,8 @@ public class PlaceGUI extends Application implements Observer {
         this.tilePreview.setStrokeWidth(2);
         this.tileLocation = new Text("(0,0)");
         this.tileOwner = new Text("Owner");
-        this.tilePlaceDate = new Text("MM/DD/YY");
-        this.tilePlaceTime = new Text("HH:MM:SS");
+        this.tilePlaceDate = new Text("12/31/69");
+        this.tilePlaceTime = new Text("19:00:00");
 
         // sets the color of each of these information bits
         this.tileLocation.setFill(Color.WHITE);
@@ -291,6 +293,12 @@ public class PlaceGUI extends Application implements Observer {
         this.selectedColor = color;
     }
 
+    /**
+     * The update method that is called by an Observable when it has a change it needs to report.
+     *
+     * @param o The Observable (it attaches itself to make sure we are being updated from the correct model
+     * @param tile The tile that is being sent for update.
+     */
     public void update(Observable o, Object tile)
     {
         // makes sure our Observable is the one we want (if it's not then we are screwed)
@@ -313,49 +321,55 @@ public class PlaceGUI extends Application implements Observer {
         // get the color of our tile so we can set it properly
         PlaceColor tileColor = tile.getColor();
 
-        // create our new rectangle to be put in place of the old one
-        Rectangle changedTile = new Rectangle(RECT_SIZE, RECT_SIZE,
-                Color.rgb(tileColor.getRed(),tileColor.getGreen(),tileColor.getBlue()));
+        try {
+            // create our new rectangle to be put in place of the old one
+            Rectangle changedTile = new Rectangle(RECT_SIZE, RECT_SIZE,
+                    Color.rgb(tileColor.getRed(), tileColor.getGreen(), tileColor.getBlue()));
 
 
-        // CREATING EVENT LISTENERS ========================
-        // creates a formatter for the date so that it appears as MM/DD/YY on the tile information center
-        SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yy");
-        // formats the actual information
-        String date = dateFormat.format(new Date(tile.getTime()));
-        // creates a formatter for the time so that it appears as HH:MM:SS in 24-hour time
-        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
-        // formats the actual time information
-        String time = timeFormat.format(new Date(tile.getTime()));
+            // CREATING EVENT LISTENERS ========================
+            // creates a formatter for the date so that it appears as MM/DD/YY on the tile information center
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yy");
+            // formats the actual information
+            String date = dateFormat.format(new Date(tile.getTime()));
+            // creates a formatter for the time so that it appears as HH:MM:SS in 24-hour time
+            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+            // formats the actual time information
+            String time = timeFormat.format(new Date(tile.getTime()));
 
-        // sets an event listener to change the information panel to preview the information of this tile
-        changedTile.setOnMouseEntered(
-                (ActionEvent) ->
-                        javafx.application.Platform.runLater(() ->
-                        {
-                            this.tilePreview.setFill(
-                                    Color.rgb(tileColor.getRed(),tileColor.getGreen(),tileColor.getBlue())
-                            );
-                            this.tileLocation.setText("(" + tile.getRow()+
-                                    "," + tile.getCol() + ")");
-                            this.tileOwner.setText(tile.getOwner());
-                            this.tilePlaceDate.setText(date);
-                            this.tilePlaceTime.setText(time);
-                        })
-        );
+            // sets an event listener to change the information panel to preview the information of this tile
+            changedTile.setOnMouseEntered(
+                    (ActionEvent) ->
+                            javafx.application.Platform.runLater(() ->
+                            {
+                                this.tilePreview.setFill(
+                                        Color.rgb(tileColor.getRed(), tileColor.getGreen(), tileColor.getBlue())
+                                );
+                                this.tileLocation.setText("(" + tile.getRow() +
+                                        "," + tile.getCol() + ")");
+                                this.tileOwner.setText(tile.getOwner());
+                                this.tilePlaceDate.setText(date);
+                                this.tilePlaceTime.setText(time);
+                            })
+            );
 
-        // set a new event handler
-        changedTile.setOnMouseClicked(
-                (ActionEvent) -> this.serverConn.sendTile(
-                        new PlaceTile(tile.getRow(), tile.getCol(), this.username, this.selectedColor, System.currentTimeMillis())
-                )
-        );
+            // set a new event handler
+            changedTile.setOnMouseClicked(
+                    (ActionEvent) -> this.serverConn.sendTile(
+                            new PlaceTile(tile.getRow(), tile.getCol(), this.username, this.selectedColor, System.currentTimeMillis())
+                    )
+            );
 
 
-        // CHANGING THE TILE ON SCREEN ===========================
-        // using runLater to join this method with the JavaFX thread
-        // set our tile in its correct place
-        javafx.application.Platform.runLater( () -> mainGrid.add(changedTile, tile.getCol(), tile.getRow()));
+            // CHANGING THE TILE ON SCREEN ===========================
+            // using runLater to join this method with the JavaFX thread
+            // set our tile in its correct place
+            javafx.application.Platform.runLater(() -> mainGrid.add(changedTile, tile.getCol(), tile.getRow()));
+        }
+        catch(Exception e)
+        {
+            // given bad tile
+        }
     }
 
     public void stop() throws Exception

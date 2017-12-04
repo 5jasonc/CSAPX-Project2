@@ -175,7 +175,6 @@ public class PlaceClientThread extends Thread
         // prints to the server log that user has sent a bad request
         System.err.println("Bad request received from " + this.username + ". REQUEST: " + type);
 
-
         // flushes the stream so it sends
         out.flush();
         // terminate thread

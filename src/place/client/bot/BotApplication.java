@@ -28,8 +28,8 @@ public abstract class BotApplication {
      * public static void main(String[] args)
      * {
      *      BotApplication.launch( [class );
-     * }
      *
+     * }
      * @param botClass the class object that refers to the class that is to be instantiated.
      */
     public static void launch(Class< ? extends BotApplication> botClass)
@@ -139,21 +139,15 @@ public abstract class BotApplication {
          */
         public void run()
         {
-            // scanner can close, PrintWriter needs to remain open
-            PrintWriter out;
-            try ( Scanner consoleIn = new Scanner( System.in ) ) {
-                try {
-                    out = new PrintWriter(
-                            new OutputStreamWriter( System.out ), true );
-                    // starts the bot (indication that it is go time)
-                    bot.start( consoleIn, out );
-                    //out = null;
-                }
-                catch( Exception e )
-                {
-                    // print a stack trace if anything fatal occurs
-                    e.printStackTrace();
-                }
+            try ( Scanner in = new Scanner( System.in ) ) {
+                // starts the bot (indication that it is go time)
+                bot.start();
+                bot.startCmdListening(in);
+            }
+            catch( Exception e )
+            {
+                // print a stack trace if anything fatal occurs
+                e.printStackTrace();
             }
         }
     }
@@ -161,9 +155,13 @@ public abstract class BotApplication {
     /**
      * The method that begins the start procedure of the bot. consoleIn is required so that different sorts of commands
      * can be run. consoleOut is used to print to standard out.
-     *
-     * @param consoleIn  the source of the user input
-     * @param consoleOut the destination where text output should be printed
      */
-    public abstract void start(Scanner consoleIn, PrintWriter consoleOut) throws Exception;
+    public abstract void start() throws Exception;
+
+    /**
+     * A do-nothing command listener that must be implemented by a user. At the base it must handle exiting.
+     */
+    public abstract void startCmdListening(Scanner in);
+
+    public abstract boolean go();
 }
