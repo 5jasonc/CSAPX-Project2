@@ -95,13 +95,9 @@ public abstract class ConsoleApplication {
             ptuiApp.cmdLineArgs = Arrays.copyOf( args, args.length );
 
             try {
-                System.out.println("init");
                 ptuiApp.init();
-                System.out.println("event thread creation");
                 ptuiApp.eventThread = new Thread( new Runner( ptuiApp ) );
-                System.out.println("starting");
                 ptuiApp.eventThread.start();
-                System.out.println("joining");
                 ptuiApp.eventThread.join();
             }
             catch( Exception ie ) {

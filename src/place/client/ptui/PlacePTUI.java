@@ -19,26 +19,11 @@ public class PlacePTUI extends ConsoleApplication implements Observer
 
     private String username;
 
-    private PlaceBoardObservable board;
+    private PlaceBoardObservable model;
 
     private NetworkClient serverConn;
 
     private boolean go = false;
-
-    /**
-     * Method used to get the named parameters from the command line arguments
-     * @param name The string name of the parameter you need to get
-     * @return the parameter needed from the List
-     * @throws PlaceException k
-     */
-    private String getParamNamed(String name) throws PlaceException {
-        // gets parameters from ConsoleApplication
-        if(parameters == null) { parameters = super.getArguments(); }
-        // checks for argument, throws an error if it is missing
-        if(!parameters.contains(name)) { throw new PlaceException("Can't find parameter named " + name); }
-        // otherwise get named parameter
-        else { return parameters.get(parameters.indexOf(name)); }
-    }
 
     /**
      * Initializes client before doing anything with model of our board
@@ -47,19 +32,19 @@ public class PlacePTUI extends ConsoleApplication implements Observer
     public void init() throws Exception {
         super.init();
 
+        this.parameters = super.getArguments();
         // Get named command line arguments to be used
-        username = getParamNamed("user");
-        String hostname = getParamNamed("host");
-        int port = Integer.parseInt(getParamNamed("port"));
+        String hostname = this.parameters.get(0);
+        int port = Integer.parseInt(this.parameters.get(1));
+        this.username = this.parameters.get(2);
 
-        System.out.println("Creating board");
         // Creates blank model for board
-        board = new PlaceBoardObservable();
+        this.model = new PlaceBoardObservable();
 
-        try {
-            System.out.println("connection");
+        try
+        {
             // Connects with the NetworkClient to communicate with PlaceServer
-            serverConn = new NetworkClient(hostname, port, username, board);
+            serverConn = new NetworkClient(hostname, port, this.username, model);
         }
         catch(Exception e) {
             System.err.println("Error connecting with Place server...");
@@ -78,7 +63,7 @@ public class PlacePTUI extends ConsoleApplication implements Observer
     @Override
     public synchronized void go(Scanner in, PrintWriter out) throws Exception {
         // make PTUI an observer of the board
-        board.addObserver(this);
+        this.model.addObserver(this);
 
         // begins thread for NetworkClient to listen to server
         serverConn.start();
@@ -111,6 +96,6 @@ public class PlacePTUI extends ConsoleApplication implements Observer
 
     @Override
     public String toString() {
-        return "to string called...";
+        return this.model.getBoard().toString();
     }
 }
