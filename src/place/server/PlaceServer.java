@@ -11,25 +11,30 @@ import place.network.NetworkServer;
  *
  */
 public class PlaceServer implements Closeable {
-    // the server should be 15 lines-ish
 
-    // server communicates to "NetworkServer"
-    // server communicates with "PlaceClientThread"
-    // HashMap<String, ObjectOutputStream>
-    //          user    output connection
-    // NetworkServer needs to be synchronized: login, sending board to user(in login), tile change (looped through), logoff
-
+    /**
+     *
+     */
     private ServerSocket server;
 
+    /**
+     *
+     */
     private NetworkServer networkServer;
 
+    /**
+     *
+     */
     private boolean go;
 
+    /**
+     *
+     * @return
+     */
     private synchronized boolean go()
     {
         return this.go;
     }
-
 
     /**
      * Constructs a new PlaceServer which is used to accept connections from Place clients.

@@ -11,6 +11,8 @@ import java.io.ObjectOutputStream;
 
 import java.net.Socket;
 
+// fully commented
+
 /**
  * A network middle-man for a Place client.
  *
@@ -96,7 +98,7 @@ public class NetworkClient {
 
             // LOG IN SEQUENCE ================================
             // write our login request with our username
-            out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.LOGIN, username));
+            out.writeUnshared(new PlaceRequest<>(PlaceRequest.RequestType.LOGIN, username));
             // wait for response from server to determine if we should continue starting or not
             PlaceRequest<?> response = (PlaceRequest<?>) in.readObject();
             // go through each case to determine what the response was
@@ -104,14 +106,14 @@ public class NetworkClient {
             switch (response.getType())
             {
                 case LOGIN_SUCCESS:
-                    System.out.println("Successfully joined Place server as \"" + response.getData() + "\".");
+                    System.out.println("[Server]: Successfully joined Place server as \"" + response.getData() + "\".");
                     break;
                 case ERROR:
-                    System.err.println("Failed to join Place server. Server response: " + response.getData() + ".");
+                    System.err.println("[Server]: Failed to join Place server. Server response: " + response.getData() + ".");
                     this.close();
                     throw new PlaceException("Unable to join.");
                 default:
-                    System.err.println("Bad response received from server.");
+                    System.err.println("[Server]: Bad response received from server.");
                     this.close();
                     throw new PlaceException("Unable to join.");
             }
@@ -119,7 +121,7 @@ public class NetworkClient {
 
             // BOARD READ-IN SEQUENCE ===============================
             // read in the object (should be a board)
-            PlaceRequest<?> boardResponse = ( PlaceRequest<?> ) in.readObject();
+            PlaceRequest<?> boardResponse = ( PlaceRequest<?> ) in.readUnshared();
 
             // check to make sure what we just read in was in fact a board
             if(boardResponse.getType() == PlaceRequest.RequestType.BOARD)
@@ -159,10 +161,11 @@ public class NetworkClient {
         // this.go() is synchronized so we only do this one at a time
         while(this.go())
         {
+            // try to read the next request
             try
             {
                 // reads the next request from the buffer
-                PlaceRequest<?> request = ( PlaceRequest<?> ) this.in.readObject();
+                PlaceRequest<?> request = ( PlaceRequest<?> ) this.in.readUnshared();
                 // determines which type of request was given
                 switch(request.getType())
                 {
@@ -209,7 +212,7 @@ public class NetworkClient {
         try
         {
             // write the tile to the output buffer
-            this.out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.CHANGE_TILE, tile));
+            this.out.writeUnshared(new PlaceRequest<>(PlaceRequest.RequestType.CHANGE_TILE, tile));
             // flushes the object written out
             out.flush();
         }
@@ -237,7 +240,7 @@ public class NetworkClient {
      */
     private void error(String error)
     {
-        System.err.println("Server responded with error message: \"" + error + "\"");
+        System.err.println("[Client]: Server responded with error message: \"" + error + "\"");
         this.stop();
     }
 
@@ -246,7 +249,7 @@ public class NetworkClient {
      */
     private void badResponse()
     {
-        System.err.println("Bad response received from server. Terminating connection.");
+        System.err.println("[Client]: Bad response received from server. Terminating connection.");
         this.stop();
     }
 

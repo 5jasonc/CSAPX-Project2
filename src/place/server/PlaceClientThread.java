@@ -13,6 +13,8 @@ import place.network.NetworkServer;
 import place.network.PlaceRequest;
 import place.network.PlaceRequest.RequestType;
 
+// fully commented
+
 /**
  * The PlaceClientThread is the server-sided class that listens to the client's input and relays it to the NetworkServer.
  *
@@ -24,6 +26,7 @@ public class PlaceClientThread
      * The ObjectInputStream from the client (reads the requests that the client sends to server).
      */
     private ObjectInputStream in;
+
     /**
      * The ObjectOutputStream from the client (sends the requests that the server sends to client).
      */
@@ -55,6 +58,7 @@ public class PlaceClientThread
     {
         return this.go;
     }
+
     /**
      * Setter that is used to stop the thread in the event of need to stop.
      */
@@ -74,6 +78,7 @@ public class PlaceClientThread
      */
     PlaceClientThread(Socket player, NetworkServer networkServer) throws PlaceException
     {
+        // tries to create a new PlaceClientThread
         try
         {
             // sets the ObjectOutputStream (need to do OUTPUT before we can do INPUT)
@@ -114,7 +119,7 @@ public class PlaceClientThread
             {
                 // will eventually put this into PlaceExchange in network package (for code re-usage)
                 // reads in a request from the user (blocks until it reads in)
-                PlaceRequest<?> request = ( PlaceRequest<?> ) in.readObject();
+                PlaceRequest<?> request = ( PlaceRequest<?> ) in.readUnshared();
 
                 switch(request.getType())
                 {
@@ -135,14 +140,8 @@ public class PlaceClientThread
                         break;
                     case CHANGE_TILE:
                         PlaceTile tile = (PlaceTile) request.getData();
-                        // if the move requested is valid, we make the move, otherwise we have to quit
-                        if(tileChangeRequest(tile))
-                        {
-                            System.out.println("[Server]: " + this.username + " has requested to change a tile.");
-                            System.out.println("\tNew tile: " + tile);
-                        }
-                        // otherwise we need to quit before it's too late
-                        else
+                        // if the move requested is not valid, tileChangeRequest returns false and we report it
+                        if(!tileChangeRequest(tile))
                         {
                             System.err.println("[Server]: " + this.username + " has requested to change a tile that doesn't exist.");
                             System.err.println("\t Terminating their connection.");

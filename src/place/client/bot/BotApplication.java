@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
+// fully commented
+
 /**
  * The BotApplication class is used to launch a Bot client which connects to a PlaceServer.
  *
@@ -64,7 +66,7 @@ public abstract class BotApplication {
             // makes a copy of the arguments
             bot.arguments = Arrays.copyOf( args, args.length );
             // sets the class name which is used in the log
-            bot.className = botClass.getName();
+            bot.className = botClass.getSimpleName();
 
             try
             {
@@ -80,7 +82,7 @@ public abstract class BotApplication {
             catch( Exception ie )
             {
                 // if ANY sort of issue is had while running, print it to standard error
-                System.err.println( "Console event thread interrupted." );
+                System.err.println("Bot thread interrupted.");
             }
             finally
             {
@@ -127,7 +129,7 @@ public abstract class BotApplication {
 
 
     /**
-     * A private class that keeps the bot running while the application should be running
+     * A private class that keeps the bot running while the application should be running.
      */
     private static class BotRunner implements Runnable
     {

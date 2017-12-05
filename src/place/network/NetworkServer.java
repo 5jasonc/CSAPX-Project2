@@ -9,6 +9,8 @@ import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+// fully commented
+
 /**
  * A network middle-man for a Place server.
  *
@@ -16,12 +18,14 @@ import java.util.Map;
  */
 public class NetworkServer
 {
+    //TODO: server log function
     /**
      * The Map that contains all of the currently connected users.
      * The key is a String that is the username
      * The value is that user's ObjectOutputStream
      */
     private Map<String, ObjectOutputStream> users;
+
     /**
      * The "master" PlaceBoard that is used to send to users and
      */
@@ -67,16 +71,16 @@ public class NetworkServer
                 System.out.println("[Server]: " + usernameRequest + " has joined the server.");
 
                 // tell the user they were logged in successfully
-                out.writeObject(new PlaceRequest<>(RequestType.LOGIN_SUCCESS, usernameRequest));
+                out.writeUnshared(new PlaceRequest<>(RequestType.LOGIN_SUCCESS, usernameRequest));
                 // sends the board as well since we have connected and we need to build our board
-                out.writeObject(new PlaceRequest<>(RequestType.BOARD, this.board));
+                out.writeUnshared(new PlaceRequest<>(RequestType.BOARD, this.board));
                 // return true iff login was successful
                 return true;
             }
             else
             {
                 // tell the user the username is taken
-                out.writeObject(new PlaceRequest<>(RequestType.ERROR, "Username taken."));
+                out.writeUnshared(new PlaceRequest<>(RequestType.ERROR, "Username taken."));
             }
             // write our result out (doesn't matter which because either way we need to send something)
             out.flush();
@@ -163,7 +167,7 @@ public class NetworkServer
             for (ObjectOutputStream out : users.values()) {
                 try {
                     // writes out our changed tile
-                    out.writeObject(changedTile);
+                    out.writeUnshared(changedTile);
                     // sets the place in the board that was just changed
                     this.board.setTile(tile);
                 } catch (IOException e) {
@@ -212,5 +216,4 @@ public class NetworkServer
             }
         }
     }
-
 }

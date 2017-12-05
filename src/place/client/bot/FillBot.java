@@ -6,10 +6,12 @@ import place.PlaceException;
 import place.PlaceTile;
 import place.network.NetworkClient;
 
-import java.io.IOException;
+
 import java.util.*;
 
 import static java.lang.Thread.sleep;
+
+// fully commented
 
 /**
  * A type of Bot client that connects to a PlaceServer and performs actions that FILL the screen with color.
@@ -21,7 +23,17 @@ public class FillBot extends BotApplication {
     /**
      * The list of PlaceColor choices that the user can select from.
      */
-    private static List<PlaceColor> colorChoices;
+    private static List<PlaceColor> COLOR_CHOICES;
+
+    /**
+     * The minimum color we can choose (located at index 0)
+     */
+    private static final int MIN_COLOR = 0;
+
+    /**
+     * The maximum color we can choose (located at index TOTAL_COLORS - 1)
+     */
+    private static final int MAX_COLOR = PlaceColor.TOTAL_COLORS - 1;
 
     /**
      * The prompt String that is posted every time a user should provide input.
@@ -29,9 +41,21 @@ public class FillBot extends BotApplication {
     private final static String PROMPT = ">>>";
 
     /**
+     * The minimum number of milliseconds to wait between each place of a PlaceTile.
+     */
+    private final static int MAX_SPEED = 2000;
+
+    /**
      * The default number of milliseconds to wait between each place of a PlaceTile.
      */
-    private final static int DEFAULT_SPEED = 20;
+    private final static int DEFAULT_SPEED = 50;
+
+    /**
+     * The maximum number of milliseconds to wait between each place of a PlaceTile.
+     */
+    private final static int MIN_SPEED = 20;
+
+    //=============================================
 
     /**
      * The connection to the server through a NetworkClient.
@@ -56,7 +80,7 @@ public class FillBot extends BotApplication {
     /**
      * The number of milliseconds between the sending of each PlaceTile.
      */
-    private int speed = 20;
+    private int speed = DEFAULT_SPEED;
 
     /**
      * The boolean used to tell if we should stick with the same color or not.
@@ -154,7 +178,7 @@ public class FillBot extends BotApplication {
     @Override
     public void start()
     {
-        // logs taht the setup is complete
+        // logs that the setup is complete
         log("Setup complete. Bot is starting.");
 
         // starts the serverCon listening (not really used because the bot doesn't display the board at all)
@@ -184,7 +208,7 @@ public class FillBot extends BotApplication {
             System.out.print(PROMPT);
             // gets the next command (first full word)
             // sets it to lowercase just so any form can be understood (i.e. eXiT == exit)
-            String command = in.next().toLowerCase();
+            String command = in.next().toLowerCase().trim();
 
             // gets the rest of the line and throws it into a tokens array (used for sticky)
             String [] tokens = in.nextLine().trim().split(" ");
@@ -202,32 +226,34 @@ public class FillBot extends BotApplication {
                     exit();
                     break;
                 case "pause":
+                case "stop":
                     pause();
                     break;
                 case "resume":
+                case "play":
                     resume();
                     break;
                 case "speed":
                     // if we were given a speed we use it
-                    if(tokens.length != 0)
+                    if(tokens[0].equals(""))
+                        speed();
+                    // otherwise we use the default method
+                    else
                     {
                         try { speed(Integer.parseInt(tokens[0])); }
                         catch(NumberFormatException e) { badCommand(command + " " + tokens[0]); }
                     }
-                    // otherwise we use the default method
-                    else
-                        speed();
                     break;
                 case "sticky":
                     // if we were given a color we use it
-                    if(tokens.length != 0)
+                    if(tokens[0].equals(""))
+                        sticky();
+                        // otherwise we use the default method
+                    else
                     {
                         try { sticky(Integer.parseInt(tokens[0])); }
                         catch(NumberFormatException e) { badCommand(command + " " + tokens[0]); }
                     }
-                    // otherwise we use the default method
-                    else
-                        sticky();
                     break;
                 case "cycle":
                     cycle();
@@ -253,13 +279,24 @@ public class FillBot extends BotApplication {
             "| pause : pauses the bot at its current tile.\n" +
             "| resume : resumes the bots cycle at its current tile.\n"+
             "| speed [number] : sets the time in milliseconds between each tile the bot places.\n"+
-            "|\t (note: the number is optional, it must be an integer greater than or equal to 20.)\n" +
+            "|\t (note: the number is optional, it must be an integer 20-2000.)\n" +
             "| sticky [color] : keeps the bot on a single color.\n" +
             "| \t (note: the color is optional, it must be an integer 0-15.)\n" +
-            "| cycle : returns bot to cycle mode.\n" +
+            "| cycle : fills the board with a single color then goes to the next.\n" +
             "| rainbow : change color for every tile placed.\n"+
-            "-------------------------------------------------------------------------------------------"
+            "--------------------------------------------------------------------------------------------"
         );
+    }
+
+    /**
+     * Exits the Bot.
+     */
+    private void exit()
+    {
+        // logs we are exiting
+        log("Exiting the Bot.");
+        // sets go to false indicating to the thread it needs to stop
+        this.go = false;
     }
 
     /**
@@ -267,7 +304,9 @@ public class FillBot extends BotApplication {
      */
     private void pause()
     {
+        // logs we are pausing the fill
         log("Pausing the fill. To resume, use \"resume\".");
+        // pauses the fill
         this.pause = true;
     }
 
@@ -276,7 +315,9 @@ public class FillBot extends BotApplication {
      */
     private void resume()
     {
+        // logs that we will resume
         log("Resuming the fill.");
+        // resumes the fill
         this.pause = false;
     }
 
@@ -295,19 +336,16 @@ public class FillBot extends BotApplication {
      */
     private void speed(int speed)
     {
-        log("Setting the speed to " + speed);
-        if(speed >= 20) {
-            this.speed = speed;
+        // makes sure its a valid speed
+        if(speed < MIN_SPEED || speed > MAX_SPEED)
+        {
+            badCommand("speed " + speed);
+            return;
         }
-    }
-
-    /**
-     * Exits the Bot.
-     */
-    private void exit()
-    {
-        log("Exiting the Bot.");
-        this.go = false;
+        // tell the user we are now setting our speed
+        log("Setting the place speed to " + speed + "ms.");
+        // sets our speed
+        this.speed = speed;
     }
 
     /**
@@ -315,6 +353,7 @@ public class FillBot extends BotApplication {
      */
     private void sticky()
     {
+        // calls the sticky method with the current color
         sticky(this.currentColor);
     }
 
@@ -325,13 +364,20 @@ public class FillBot extends BotApplication {
      */
     private void sticky(int color)
     {
-        log("Changing to sticky mode.");
-        if(color < 0 || color > 15)
+        // makes sure its a valid color
+        if(color < MIN_COLOR || color >= MAX_COLOR)
         {
             badCommand("sticky " + color);
             return;
         }
+
+        // if we've made it here, we can log that we are making a change
+        log("Changing to sticky mode on color " + color + ".");
+
+        // sets the current color
         this.currentColor = color;
+
+        // sets us in sticky mode
         this.sticky = true;
         this.rainbow = false;
     }
@@ -341,7 +387,10 @@ public class FillBot extends BotApplication {
      */
     private void cycle()
     {
+        // logs we are gong to cycle mode
         log("Changing to cycle mode.");
+
+        // sets us in cycle mode
         this.rainbow = false;
         this.sticky = false;
     }
@@ -408,7 +457,7 @@ public class FillBot extends BotApplication {
                 // send a tile
                 this.serverConn.sendTile(
                         new PlaceTile(currentRow, currentCol, this.username,
-                                colorChoices.get(this.currentColor), System.currentTimeMillis())
+                                COLOR_CHOICES.get(this.currentColor), System.currentTimeMillis())
                 );
                 // adds one to row and mod by cols (this way it sets to 0 if needed)
                 currentCol = (++currentCol) % cols;
@@ -419,7 +468,7 @@ public class FillBot extends BotApplication {
 
                 // sets the color to the next in the list if needed
                 if((currentRow == 0 && currentCol == 0  || this.rainbow) && !this.sticky)
-                    this.currentColor = (currentColor + 1) % colorChoices.size();
+                    this.currentColor = (currentColor + 1) % COLOR_CHOICES.size();
 
                 // sleeps for however long speed is set to
                 try { sleep(this.speed); } catch(InterruptedException ie){/* do nothing we don't care */}
@@ -434,7 +483,7 @@ public class FillBot extends BotApplication {
      *             Should be of the form: host port username
      */
     public static void main(String[] args) {
-        // we need exactly 4 arguments
+        // we need exactly 3 arguments
         if(args.length != 3)
         {
             System.err.println("Please run the bot as: ");
@@ -443,7 +492,7 @@ public class FillBot extends BotApplication {
         }
 
         // creates a new List of color choices
-        colorChoices = Arrays.asList(PlaceColor.values());
+        COLOR_CHOICES = Arrays.asList(PlaceColor.values());
 
         try
         {
