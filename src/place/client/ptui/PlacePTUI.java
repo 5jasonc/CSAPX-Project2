@@ -14,7 +14,7 @@ import java.util.*;
  *     <pre>$ java PlacePTUI host port username</pre>
  * to properly log in.
  *
- * @author Jason Streeter
+ * @author Jason Streeter (jcs1738)
  * @author Kevin Becker (kjb2503)
  */
 public class PlacePTUI extends ConsoleApplication implements Observer
@@ -97,7 +97,6 @@ public class PlacePTUI extends ConsoleApplication implements Observer
             System.exit(1);
         }
 
-        
         ConsoleApplication.launch(PlacePTUI.class, args);
     }
 
