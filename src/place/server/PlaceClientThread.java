@@ -23,6 +23,13 @@ import place.network.PlaceRequest.RequestType;
 public class PlaceClientThread
 {
     /**
+     * The number of milliseconds a user must wait before they can send their next tile.
+     */
+    private final static int COOLDOWN_TIME = 500;
+
+    //==============================================
+
+    /**
      * The ObjectInputStream from the client (reads the requests that the client sends to server).
      */
     private ObjectInputStream in;
@@ -50,6 +57,14 @@ public class PlaceClientThread
     private boolean go;
 
     /**
+     * A boolean that indicates if this client is cooling down after placing a tile.
+     *
+     * If it is, the client cannot send a new piece. If it is true, and a client tries to send a PlaceTile,
+     * it displays an error.
+     */
+    private boolean coolDown;
+
+    /**
      * Getter that is used by run to tell if it should keep going.
      *
      * @return A boolean. True if this.go is set to true; false otherwise.
@@ -67,6 +82,7 @@ public class PlaceClientThread
         this.go = false;
     }
 
+    // ==========================================
 
     /**
      * Constructs a new thread for a player once they connect to the server.
@@ -140,11 +156,18 @@ public class PlaceClientThread
                         break;
                     case CHANGE_TILE:
                         PlaceTile tile = (PlaceTile) request.getData();
-                        // if the move requested is not valid, tileChangeRequest returns false and we report it
-                        if(!tileChangeRequest(tile))
+                        // tries to make a tileChange request
+                        // if the move requested is valid, and this client is not within its cool down time
+                        // it gets sent and we initiate the cool down phase
+                        if(tileChangeRequest(tile) && !this.coolDown)
                         {
-                            System.err.println("[Server]: " + this.username + " has requested to change a tile that doesn't exist.");
-                            System.err.println("\t Terminating their connection.");
+                            // spawns the coolDown which cools down for 500ms (stops listening for that long)
+                            new Thread(this::coolDown).start();
+                        }
+                        else
+                        {
+                            logErr(this.username + " has requested to change a tile that doesn't exist.");
+                            logErr("Terminating connection for " + this.username);
                             badRequest("Tile not valid.");
                         }
                         break;
@@ -195,6 +218,26 @@ public class PlaceClientThread
     }
 
     /**
+     * A small sleeper thread class which makes it so a user cannot send any PlaceTile for 500ms. (A cool-down)
+     */
+    private synchronized void coolDown()
+    {
+        // sleeps
+        this.coolDown = true;
+        // sleeps for 500ms
+        try
+        {
+            Thread.sleep(COOLDOWN_TIME);
+        }
+        catch(InterruptedException e)
+        {
+            /* do nothing */
+        }
+        // stops coolDown
+        this.coolDown = false;
+    }
+
+    /**
      * If we receive a bad request from a client, we send a similar message for each of those, which we handle here.
      *
      * @param type The type of error that is run into for alerting user.
@@ -219,6 +262,30 @@ public class PlaceClientThread
     {
         // tells the networkServer we want to change a tile
         return this.networkServer.tileChangeRequest(tile);
+    }
+
+    /**
+     * Logs a non-error message to standard output.
+     *
+     * Runs through NetworkServer.
+     *
+     * @param msg The message to be printed out.
+     */
+    private void log(String msg)
+    {
+        this.networkServer.log(msg);
+    }
+
+    /**
+     * Logs an error message to standard output.
+     *
+     * Runs through NetworkServer.
+     *
+     * @param msg The message to be printed out.
+     */
+    private void logErr(String msg)
+    {
+        this.networkServer.logErr(msg);
     }
 
 

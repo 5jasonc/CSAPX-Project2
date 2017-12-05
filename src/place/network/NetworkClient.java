@@ -53,19 +53,19 @@ public class NetworkClient {
     private String logHeader;
 
     /**
+     * A boolean that indicates if this client is cooling down after placing a tile.
+     *
+     * If it is, the client cannot send a new piece. If it is true, and a client tries to send a PlaceTile,
+     * it displays an error.
+     */
+    private boolean coolDown;
+
+    /**
      * The indicator to the thread whether it should keep running or not.
      *
      * If the thread should continue running this is true; false otherwise.
      */
     private boolean go;
-
-    /**
-     * A boolean that indicates if this client is sleeping.
-     *
-     * If it is sleeping the client cannot send a new piece. If it is true, and a client tries to send a PlaceTile,
-     * it displays an error.
-     */
-    private boolean sleeping;
 
     /**
      * This is used by the thread to make sure it should keep going.
@@ -231,7 +231,7 @@ public class NetworkClient {
      */
     public synchronized void sendTile(PlaceTile tile)
     {
-        if(!this.sleeping)
+        if(!this.coolDown)
         {
             // writes the tile to the server
             try
@@ -260,7 +260,7 @@ public class NetworkClient {
     private synchronized void coolDown()
     {
         // sleeps
-        this.sleeping = true;
+        this.coolDown = true;
         // sleeps for 500ms
         try
         {
@@ -270,8 +270,8 @@ public class NetworkClient {
         {
             /* do nothing */
         }
-        // stops sleeping
-        this.sleeping = false;
+        // stops coolDown
+        this.coolDown = false;
     }
 
     /**
@@ -306,14 +306,20 @@ public class NetworkClient {
         this.stop();
     }
 
+    /**
+     * Logs a non-error message to standard output.
+     *
+     * @param msg The message to be printed out.
+     */
     public void log(String msg)
     {
         System.out.println(logHeader + msg);
     }
 
     /**
-     * Logs an ERROR message to standard output if any sort of information is
-     * @param msg
+     * Logs an error message to standard output.
+     *
+     * @param msg The message to be printed out.
      */
     public void logErr(String msg)
     {
