@@ -28,7 +28,7 @@ import java.util.Scanner;
  * returns, {@link #stop() stop} is executed.
  *
  * @author James Heliotis
- * Edits made by Jason Streeter
+ * Edits made by Jason Streeter (jcs1738)
  */
 public abstract class ConsoleApplication {
 
@@ -130,7 +130,6 @@ public abstract class ConsoleApplication {
                     out = new PrintWriter(
                             new OutputStreamWriter( System.out ), true );
                     ptuiApp.go( consoleIn, out );
-                    //out = null;
                 }
                 catch( Exception e ) {
                     e.printStackTrace();
