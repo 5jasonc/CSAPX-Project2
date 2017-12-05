@@ -18,7 +18,8 @@ import java.util.Map;
  */
 public class NetworkServer
 {
-    //TODO: server log function
+    private static final String logHeader = "[Server]: ";
+
     /**
      * The Map that contains all of the currently connected users.
      * The key is a String that is the username
@@ -68,7 +69,7 @@ public class NetworkServer
                 users.put(usernameRequest, out);
 
                 // alert that user has connected
-                System.out.println("[Server]: " + usernameRequest + " has joined the server.");
+                log(usernameRequest + " has joined the server");
 
                 // tell the user they were logged in successfully
                 out.writeUnshared(new PlaceRequest<>(RequestType.LOGIN_SUCCESS, usernameRequest));
@@ -126,7 +127,7 @@ public class NetworkServer
         out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Bad request received: " + type + ". Terminating connection."));
 
         // prints to the server log that user has sent a bad request
-        System.err.println("[Server]: Bad request received from " + username + ". REQUEST: " + type);
+        logErr("Bad request received from " + username + ". REQUEST: " + type);
 
         // flushes the stream so it sends
         out.flush();
@@ -146,7 +147,7 @@ public class NetworkServer
         // since the ObjectOutputStream is just a pointer, this is all we have to do
         users.remove(username);
         // alert that user has disconnected
-        System.out.println("[Server]: " + username + " has left the server.");
+        log(username + " has left the server.");
     }
 
     /**
@@ -191,6 +192,26 @@ public class NetworkServer
     private boolean isValid(PlaceTile tile)
     {
         return this.board.isValid(tile);
+    }
+
+    /**
+     * Logs a non-error message to standard output.
+     *
+     * @param msg The message to be printed out.
+     */
+    public void log(String msg)
+    {
+        System.out.println(logHeader + msg);
+    }
+
+    /**
+     * Logs an error message to standard output.
+     *
+     * @param msg The message to be printed out.
+     */
+    public void logErr(String msg)
+    {
+        System.err.println(logHeader + msg);
     }
 
     /**

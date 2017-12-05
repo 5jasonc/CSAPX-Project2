@@ -25,7 +25,7 @@ public class FillBot extends BotApplication implements BotProtocol {
      */
     private static List<PlaceColor> COLOR_CHOICES;
 
-    // A few custom commands
+    // A few custom commands that apply ONLY to this Bot
     /**
      * The STICKY command is called to make the color which the FillBot places stay constant.
      */
