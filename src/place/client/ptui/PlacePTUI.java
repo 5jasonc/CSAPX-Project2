@@ -8,11 +8,15 @@ import java.io.*;
 import java.util.*;
 
 /**
-    Class that contains the plain text client that will connect to place server
-    @ Jason Streeter
-    @ Kevin
+ * A PTUI client which connects to a PlaceServer.
+ *
+ * Run on the command line using the following:
+ *     <pre>$ java PlacePTUI host port username</pre>
+ * to properly log in.
+ *
+ * @author Jason Streeter
+ * @author Kevin Becker (kjb2503)
  */
-
 public class PlacePTUI extends ConsoleApplication implements Observer
 {
     private List<String> parameters;
@@ -30,6 +34,7 @@ public class PlacePTUI extends ConsoleApplication implements Observer
      */
     @Override
     public void init() throws Exception {
+        // calls the superclass' init method just in case there's something there.
         super.init();
 
         this.parameters = super.getArguments();

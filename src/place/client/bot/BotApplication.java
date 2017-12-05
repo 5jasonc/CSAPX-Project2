@@ -1,12 +1,15 @@
 package place.client.bot;
 
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * The BotApplication class is used to launch a Bot client which connects to a PlaceServer.
+ *
+ * @author Kevin Becker (kjb2503)
+ * @author James Heliotis
+ */
 public abstract class BotApplication {
 
     /**
@@ -18,6 +21,11 @@ public abstract class BotApplication {
      * The event thread.
      */
     private Thread botThread;
+
+    /**
+     * Used in the log() method when a log is being printed.
+     */
+    private String className;
 
     /**
      * Run a bot application.
@@ -32,10 +40,7 @@ public abstract class BotApplication {
      * }
      * @param botClass the class object that refers to the class that is to be instantiated.
      */
-    public static void launch(Class< ? extends BotApplication> botClass)
-    {
-        launch(botClass, new String[ 0 ]);
-    }
+    public static void launch(Class< ? extends BotApplication> botClass) { launch(botClass, new String[ 0 ]); }
 
     /**
      * Run a complete bot application, with command line arguments.
@@ -58,6 +63,8 @@ public abstract class BotApplication {
             BotApplication bot = botClass.newInstance();
             // makes a copy of the arguments
             bot.arguments = Arrays.copyOf( args, args.length );
+            // sets the class name which is used in the log
+            bot.className = botClass.getName();
 
             try
             {
@@ -98,11 +105,6 @@ public abstract class BotApplication {
     public void init() throws Exception {}
 
     /**
-     * A do-nothing stop method. It does nothing so that it can be overwritten by subclasses when necessary.
-     */
-    public void stop() {}
-
-    /**
      * Used to fetch the bot application's command line arguments. It simply returns a list that was passed in as
      * arguments.
      *
@@ -112,6 +114,16 @@ public abstract class BotApplication {
     {
         return Arrays.asList(this.arguments );
     }
+
+    void log(String msg)
+    {
+        System.out.println("[" + this.className + "]: " + msg);
+    }
+
+    /**
+     * A do-nothing stop method. It does nothing so that it can be overwritten by subclasses when necessary.
+     */
+    public void stop() {}
 
 
     /**
@@ -139,9 +151,11 @@ public abstract class BotApplication {
          */
         public void run()
         {
+            // once this completes, the Bot has disconnected from the PlaceServer for some reason
             try ( Scanner in = new Scanner( System.in ) ) {
                 // starts the bot (indication that it is go time)
                 bot.start();
+                // starts the bot listening for commands
                 bot.startCmdListening(in);
             }
             catch( Exception e )
@@ -153,8 +167,7 @@ public abstract class BotApplication {
     }
 
     /**
-     * The method that begins the start procedure of the bot. consoleIn is required so that different sorts of commands
-     * can be run. consoleOut is used to print to standard out.
+     * The method that begins the start procedure of the bot.
      */
     public abstract void start() throws Exception;
 
@@ -163,5 +176,12 @@ public abstract class BotApplication {
      */
     public abstract void startCmdListening(Scanner in);
 
+    /**
+     * This is used by the thread to make sure it should keep going.
+     *
+     * Synchronized so that we only allow running it one thread at a time.
+     *
+     * @return true if this.go is set to true; false otherwise.
+     */
     public abstract boolean go();
 }

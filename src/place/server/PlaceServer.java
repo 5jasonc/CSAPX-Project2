@@ -7,6 +7,9 @@ import java.net.ServerSocket;
 import place.PlaceException;
 import place.network.NetworkServer;
 
+/**
+ *
+ */
 public class PlaceServer implements Closeable {
     // the server should be 15 lines-ish
 
@@ -16,15 +19,13 @@ public class PlaceServer implements Closeable {
     //          user    output connection
     // NetworkServer needs to be synchronized: login, sending board to user(in login), tile change (looped through), logoff
 
-    //TODO: make a server console GUI (for better looking updates)?
-
     private ServerSocket server;
 
     private NetworkServer networkServer;
 
     private boolean go;
 
-    private boolean go()
+    private synchronized boolean go()
     {
         return this.go;
     }
@@ -56,7 +57,7 @@ public class PlaceServer implements Closeable {
         }
         this.go = true;
         // say this to output once we've set everything up.
-        System.out.println("[PlaceServer]: Server initialization complete. Now accepting connections. Listening on: " +
+        System.out.println("[Server]: Server initialization complete. Now accepting connections. Listening on: " +
                 server.getInetAddress().getHostAddress() + ":" + server.getLocalPort());
     }
 
@@ -111,7 +112,8 @@ public class PlaceServer implements Closeable {
         if(args.length != 2)
         {
             // alert the user they have given us bad stuff
-            System.out.println("Usage: PlaceServer port dimension");
+            System.err.println("Please run the server as:");
+            System.err.println("$ java PlaceGUI host port username");
             return;
         }
 
@@ -128,8 +130,9 @@ public class PlaceServer implements Closeable {
         }
         catch (PlaceException e)
         {
-            System.err.println("FATAL ERROR: Server hit a fatal error.");
-            e.printStackTrace();
+            // tells that the server hit something totally unrecoverable
+            System.err.println("We've hit an unrecoverable issue. Please try to launch again.");
+            System.err.println( e.getMessage() );
         }
     }
 }

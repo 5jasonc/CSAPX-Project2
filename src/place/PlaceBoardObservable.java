@@ -7,8 +7,14 @@ import java.util.Observable;
  */
 public class PlaceBoardObservable extends Observable
 {
+    /**
+     * The PlaceBoard itself.
+     */
     private PlaceBoard board;
 
+    /**
+     * The dimension of the PlaceBoard.
+     */
     private int DIM;
 
     /**

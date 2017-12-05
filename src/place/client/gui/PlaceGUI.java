@@ -22,32 +22,85 @@ import place.PlaceTile;
 import place.network.NetworkClient;
 import place.PlaceBoardObservable;
 
+/**
+ * A GUI client which connects to a PlaceServer.
+ *
+ * Run on the command line using the following:
+ *     <pre>$ java PlaceGUI host port username</pre>
+ * to properly log in.
+ *
+ * @author Kevin Becker (kjb2503)
+ */
 public class PlaceGUI extends Application implements Observer {
 
-    private static final int RECT_SIZE = 70;
+    /**
+     * The possible color choices represented as a List.
+     */
+    private static List<PlaceColor> colorChoices;
 
+    /**
+     * The size that each rectangle should be on screen. It is set to 70 for 70px.
+     */
+    private static final int RECT_SIZE = 60;
+
+    /**
+     * The gaps that should be put on the FlowPane between each color choice.
+     */
     private static final int BOTTOM_GAPS = 7;
 
+    /**
+     * The scene of our GUI.
+     */
     private Scene scene;
 
+    /**
+     * The main GridPane of rectangles that represent all of the PlaceTiles in the game.
+     */
     private GridPane mainGrid;
 
+    /**
+     * The connection to the server through a NetworkClient.
+     */
     private NetworkClient serverConn;
 
+    /**
+     * The username that this user wishes to have.
+     */
     private String username;
 
+    /**
+     * The model which is used to house the board.
+     */
     private PlaceBoardObservable model;
 
-    private PlaceColor selectedColor = PlaceColor.BLACK;
+    /**
+     * The currently selected PlaceColor that will be used to send to the server if a PlaceTile is clicked on.
+     */
+    private int currentColor = 0;
 
+    /**
+     * The preview circle that is the color of the PlaceTile that the mouse is currently hovering over.
+     */
     private Circle tilePreview;
 
+    /**
+     * The location of the PlaceTile that the mouse is currently over.
+     */
     private Text tileLocation;
 
+    /**
+     * The owner of the PlaceTile that the mouse is currently over.
+     */
     private Text tileOwner;
 
+    /**
+     * The date on which the PlaceTile that the mouse is currently over was set.
+     */
     private Text tilePlaceDate;
 
+    /**
+     * The time when the PlaceTile that the mouse is currently over was set.
+     */
     private Text tilePlaceTime;
 
     /**
@@ -92,7 +145,7 @@ public class PlaceGUI extends Application implements Observer {
     }
 
     /**
-     * Constructs our GUI and then displays it at the end
+     * Constructs our GUI and then displays it at the end.
      *
      * @param primaryStage the stage that we are showing our GUI upon.
      */
@@ -106,7 +159,7 @@ public class PlaceGUI extends Application implements Observer {
         root.setTop( buildColorBar() );
 
         // sets our mainGrid in place
-        root.setCenter( this.mainGrid = buildMainGrid( this.model.getDIM(), this.model.getDIM() ) );
+        root.setCenter( this.mainGrid = buildMainGrid() );
 
         root.setLeft( buildTilePreviewVBox() );
 
@@ -141,7 +194,12 @@ public class PlaceGUI extends Application implements Observer {
     }
 
 
-    private GridPane buildMainGrid(int rows, int cols)
+    /**
+     * Builds a GridPane of Rectangle objects which are a visual representation of each PlaceTile.
+     *
+     * @return a GridPane which is DIM x DIM housing a visual representation of each PlaceTile.
+     */
+    private GridPane buildMainGrid()
     {
         // creates a new GridPane that will house our board
         GridPane mainGrid = new GridPane();
@@ -153,55 +211,14 @@ public class PlaceGUI extends Application implements Observer {
         mainGrid.setStyle("-fx-background-color:#000;");
 
         // goes through each tile since we are setting up our board for the first time
-        for(int row = 0; row < rows; ++row)
+        for(int row = 0; row < this.model.getDIM(); ++row)
         {
-            for (int col = 0; col < cols; ++col)
+            for (int col = 0; col < this.model.getDIM(); ++col)
             {
-                // gets our row and column (so they are effectively final required in the lambda expressions)
-                int tileRow = row;
-                int tileCol = col;
-
                 // gets the tile we are interested in
                 PlaceTile tile = this.model.getTile(row, col);
 
-                // gets the color of our tile that we are currently setting
-                PlaceColor tileColor = tile.getColor();
-
-                // generates our tile as a rectangle
-                Rectangle tileRectangle = new Rectangle(RECT_SIZE, RECT_SIZE,
-                        Color.rgb(tileColor.getRed(), tileColor.getGreen(), tileColor.getBlue()));
-
-                // creates a formatter for the date so that it appears as MM/DD/YY on the tile information center
-                SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yy");
-                // formats the actual information
-                String date = dateFormat.format(new Date(tile.getTime()));
-                // creates a formatter for the time so that it appears as HH:MM:SS in 24-hour time
-                SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
-                // formats the actual time information
-                String time = timeFormat.format(new Date(tile.getTime()));
-
-                // sets an event listener to change the information panel to preview the information of this tile
-                tileRectangle.setOnMouseEntered(
-                        (ActionEvent) ->
-                            javafx.application.Platform.runLater(() ->
-                            {
-                                this.tilePreview.setFill(
-                                        Color.rgb(tileColor.getRed(),tileColor.getGreen(),tileColor.getBlue())
-                                );
-                                this.tileLocation.setText("(" + tileRow +
-                                        "," + tileCol + ")");
-                                this.tileOwner.setText(tile.getOwner());
-                                this.tilePlaceDate.setText(date);
-                                this.tilePlaceTime.setText(time);
-                            })
-                );
-
-                // sets an event listener to our rectangle to listen for clicks on this tile
-                tileRectangle.setOnMouseClicked(
-                        (ActionEvent) -> this.serverConn.sendTile(
-                            new PlaceTile(tileRow, tileCol, this.username, this.selectedColor, System.currentTimeMillis())
-                        )
-                );
+                Rectangle tileRectangle = buildSingleTile(tile);
 
 
                 // add our tile to the mainGrid ( USING JAVA'S STUPID COLUMN, ROW SYSTEM WHO THE HECK DOES THAT?!?!?! )
@@ -212,6 +229,70 @@ public class PlaceGUI extends Application implements Observer {
         return mainGrid;
     }
 
+    /**
+     * Builds a Rectangle object that is a visual representation for a single PlaceTile.
+     *
+     * @param tile The tile we want to represent.
+     *
+     * @return A Rectangle that represents the PlaceTile passed.
+     */
+    private Rectangle buildSingleTile(PlaceTile tile)
+    {
+        // gets our row and column
+        int row = tile.getRow();
+        int col = tile.getCol();
+
+        // CREATING NEW TILE ==========================
+        // gets the color of our tile that we are currently setting
+        PlaceColor tileColor = tile.getColor();
+
+        // generates our tile as a rectangle
+        Rectangle tileRectangle = new Rectangle(RECT_SIZE, RECT_SIZE,
+                Color.rgb(tileColor.getRed(), tileColor.getGreen(), tileColor.getBlue()));
+
+
+        // CREATING EVENT LISTENERS ========================
+        // creates a formatter for the date so that it appears as MM/DD/YY on the tile information center
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yy");
+        // formats the actual information
+        String date = dateFormat.format(new Date(tile.getTime()));
+        // creates a formatter for the time so that it appears as HH:MM:SS in 24-hour time
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+        // formats the actual time information
+        String time = timeFormat.format(new Date(tile.getTime()));
+
+        // sets an event listener to change the information panel to preview the information of this tile
+        tileRectangle.setOnMouseEntered(
+                (ActionEvent) ->
+                        javafx.application.Platform.runLater(() ->
+                        {
+                            this.tilePreview.setFill(
+                                    Color.rgb(tileColor.getRed(),tileColor.getGreen(),tileColor.getBlue())
+                            );
+                            this.tileLocation.setText("(" + row +
+                                    "," + col + ")");
+                            this.tileOwner.setText(tile.getOwner());
+                            this.tilePlaceDate.setText(date);
+                            this.tilePlaceTime.setText(time);
+                        })
+        );
+
+        // sets an event listener to our rectangle to listen for clicks on this tile
+        tileRectangle.setOnMouseClicked(
+                (ActionEvent) -> this.serverConn.sendTile(
+                        new PlaceTile(row, col, this.username, colorChoices.get(this.currentColor), System.currentTimeMillis())
+                )
+        );
+
+        // returns the Rectangle that has been set up to reflect the PlaceTile on the board
+        return tileRectangle;
+    }
+
+    /**
+     * Builds a color bar which allows the user to select the color they want to send when they click a PlaceTile.
+     *
+     * @return A FlowPane which houses the color bar.
+     */
     private FlowPane buildColorBar()
     {
         // creates a new FlowPane that will house the color choices
@@ -227,7 +308,7 @@ public class PlaceGUI extends Application implements Observer {
         colorBar.setAlignment(Pos.CENTER);
 
         // builds all of our color choices into rectangles
-        for( PlaceColor color : PlaceColor.values() )
+        for( PlaceColor color : colorChoices )
         {
             // creates a new Rectangle Object with size RECT_SIZE/2, RECT_SIZE/2, and bg color according to color
             Rectangle colorChoice = new Rectangle(RECT_SIZE/2, RECT_SIZE/2,
@@ -238,7 +319,7 @@ public class PlaceGUI extends Application implements Observer {
             colorChoice.setArcHeight(5);
             colorChoice.setArcWidth(5);
             // when the color is changes, our selected color is changed to color
-            colorChoice.setOnMouseClicked( (EventAction) -> this.setColor(color) );
+            colorChoice.setOnMouseClicked( (EventAction) -> this.setColor(color.getNumber()) );
 
             // change our cursor to be a POINTER as it's known in the CSS world when entering the rectangle
             colorChoice.setOnMouseEntered( (EventAction) -> scene.setCursor(Cursor.HAND) );
@@ -253,6 +334,21 @@ public class PlaceGUI extends Application implements Observer {
         return colorBar;
     }
 
+    /**
+     * Changes the selected color when a user clicks on a color in the color bar.
+     *
+     * @param color The color that the user selected.
+     */
+    private void setColor(int color)
+    {
+        this.currentColor = color;
+    }
+
+    /**
+     * Builds the preview VBox which houses the preview of the PlaceTile the mouse is over.
+     *
+     * @return A VBox which houses the preview of the PlaceTile the mouse is hovering over.
+     */
     private VBox buildTilePreviewVBox()
     {
         VBox tilePreviewVBox = new VBox();
@@ -284,19 +380,14 @@ public class PlaceGUI extends Application implements Observer {
         tilePreviewVBox.getChildren().addAll(this.tilePreview, this.tileLocation, this.tileOwner,
                 this.tilePlaceDate, this.tilePlaceTime);
 
+        // return the preview VBox
         return tilePreviewVBox;
-    }
-
-
-    private void setColor(PlaceColor color)
-    {
-        this.selectedColor = color;
     }
 
     /**
      * The update method that is called by an Observable when it has a change it needs to report.
      *
-     * @param o The Observable (it attaches itself to make sure we are being updated from the correct model
+     * @param o The Observable (it attaches itself to make sure we are being updated from the correct model.
      * @param tile The tile that is being sent for update.
      */
     public void update(Observable o, Object tile)
@@ -310,68 +401,51 @@ public class PlaceGUI extends Application implements Observer {
             // if we're all set to do tile-update actions, we perform them now
             this.changeTile( (PlaceTile) tile);
         else
-            // otherwise we alert the user that we are going to redraw the board
-            System.err.println("Hmmm... Our board has sent us something and we don't know what it is. " +
+        {
+            // in the VERY unlikely event we're sent something weird from PlaceBoardObservable, we redraw the entire board.
+            System.err.println("Hmmm... Our board has sent us something and we don't know what it is.\n" +
                     "We will now recreate our board to make sure everything is correct. It should only take a second");
+            redrawGrid();
+        }
     }
 
+    /**
+     * When the update method is called, it is set a PlaceTile which is updated on the game board.
+     *
+     * @param tile The tile that was changed on the board.
+     */
     private void changeTile(PlaceTile tile)
     {
-        // CREATING NEW TILE ==========================
-        // get the color of our tile so we can set it properly
-        PlaceColor tileColor = tile.getColor();
+        // CHANGING THE TILE ON SCREEN ===========================
+        // using runLater to join this method with the JavaFX thread
+        // set our tile in its correct place
+        javafx.application.Platform.runLater(() -> mainGrid.add(buildSingleTile(tile), tile.getCol(), tile.getRow()));
+    }
 
-        try {
-            // create our new rectangle to be put in place of the old one
-            Rectangle changedTile = new Rectangle(RECT_SIZE, RECT_SIZE,
-                    Color.rgb(tileColor.getRed(), tileColor.getGreen(), tileColor.getBlue()));
-
-
-            // CREATING EVENT LISTENERS ========================
-            // creates a formatter for the date so that it appears as MM/DD/YY on the tile information center
-            SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yy");
-            // formats the actual information
-            String date = dateFormat.format(new Date(tile.getTime()));
-            // creates a formatter for the time so that it appears as HH:MM:SS in 24-hour time
-            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
-            // formats the actual time information
-            String time = timeFormat.format(new Date(tile.getTime()));
-
-            // sets an event listener to change the information panel to preview the information of this tile
-            changedTile.setOnMouseEntered(
-                    (ActionEvent) ->
-                            javafx.application.Platform.runLater(() ->
-                            {
-                                this.tilePreview.setFill(
-                                        Color.rgb(tileColor.getRed(), tileColor.getGreen(), tileColor.getBlue())
-                                );
-                                this.tileLocation.setText("(" + tile.getRow() +
-                                        "," + tile.getCol() + ")");
-                                this.tileOwner.setText(tile.getOwner());
-                                this.tilePlaceDate.setText(date);
-                                this.tilePlaceTime.setText(time);
-                            })
-            );
-
-            // set a new event handler
-            changedTile.setOnMouseClicked(
-                    (ActionEvent) -> this.serverConn.sendTile(
-                            new PlaceTile(tile.getRow(), tile.getCol(), this.username, this.selectedColor, System.currentTimeMillis())
-                    )
-            );
-
-
-            // CHANGING THE TILE ON SCREEN ===========================
-            // using runLater to join this method with the JavaFX thread
-            // set our tile in its correct place
-            javafx.application.Platform.runLater(() -> mainGrid.add(changedTile, tile.getCol(), tile.getRow()));
-        }
-        catch(Exception e)
+    /**
+     * This redraws the entire GridPane in the event the update method is sent something that isn't a PlaceTile.
+     */
+    private void redrawGrid()
+    {
+        // goes through each tile since we are setting up our board for the first time
+        for (int row = 0; row < this.model.getDIM(); ++row)
         {
-            // given bad tile
+            for (int col = 0; col < this.model.getDIM(); ++col)
+            {
+                // gets the tile we are interested in
+                PlaceTile tile = this.model.getTile(row, col);
+
+                // add our tile to the mainGrid ( USING JAVA'S STUPID COLUMN, ROW SYSTEM WHO THE HECK DOES THAT?!?!?! )
+                javafx.application.Platform.runLater(() -> mainGrid.add(buildSingleTile(tile), tile.getCol(), tile.getRow()));
+            }
         }
     }
 
+    /**
+     * When the GUI is closed, the stop method is called which closes the connection to the server.
+     *
+     * @throws Exception If there is any issue while trying to stop the GUI.
+     */
     public void stop() throws Exception
     {
         // when the program closes we close our NetworkClient so it knows to stop executing and log us out
@@ -380,27 +454,34 @@ public class PlaceGUI extends Application implements Observer {
         this.serverConn.close();
     }
 
+    /**
+     * Launches a new PlaceGUI.
+     *
+     * @param args The arguments that the GUI should be built with.
+     *             args should have: host, port, and username in that order.
+     */
     public static void main(String[] args)
     {
         // makes sure we were given the proper number of arguments, if not, tell the user the proper way to start it
-        //
         if(args.length != 3)
         {
-            System.err.println("Please run the program as:");
+            System.err.println("Please run the GUI as:");
             System.err.println("$ java PlaceGUI host port username");
+            return;
         }
-        else
+
+        colorChoices = Arrays.asList(PlaceColor.values());
+
+        try
         {
-            try
-            {
-                // attempts to launch the client
-                Application.launch(args);
-            }
-            catch(Exception e)
-            {
-                System.err.println("We've hit an unrecoverable issue. Please try to launch again.");
-                System.err.println( e.getMessage() );
-            }
+            // attempts to launch the client
+            Application.launch(args);
+        }
+        catch(Exception e)
+        {
+            // tells the user if we hit something totally unrecoverable
+            System.err.println("We've hit an unrecoverable issue. Please try to launch again.");
+            System.err.println( e.getMessage() );
         }
     }
 }

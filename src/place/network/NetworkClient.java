@@ -11,6 +11,11 @@ import java.io.ObjectOutputStream;
 
 import java.net.Socket;
 
+/**
+ * A network middle-man for a Place client.
+ *
+ * @author Kevin Becker (kjb2503)
+ */
 public class NetworkClient {
 
     /**
@@ -34,7 +39,9 @@ public class NetworkClient {
     private ObjectOutputStream out;
 
     /**
-     * Used by the thread to make sure it should keep going.
+     * The indicator to the thread whether it should keep running or not.
+     *
+     * If the thread should continue running this is true; false otherwise.
      */
     private boolean go;
 
@@ -45,20 +52,14 @@ public class NetworkClient {
      *
      * @return true if this.go is set to true; false otherwise.
      */
-    private synchronized boolean go()
-    {
-        return this.go;
-    }
+    private synchronized boolean go() { return this.go; }
 
     /**
      * This is used to stop the thread from running.
      *
      * Synchronized so that we only allow running it one thread at a time.
      */
-    private synchronized void stop()
-    {
-        this.go = false;
-    }
+    private void stop() { this.go = false; }
 
     /**
      * Constructor for the NetworkClient class.
@@ -104,7 +105,6 @@ public class NetworkClient {
             {
                 case LOGIN_SUCCESS:
                     System.out.println("Successfully joined Place server as \"" + response.getData() + "\".");
-                    this.go = true;
                     break;
                 case ERROR:
                     System.err.println("Failed to join Place server. Server response: " + response.getData() + ".");
@@ -127,10 +127,9 @@ public class NetworkClient {
                 this.board.initializeBoard( (PlaceBoard) boardResponse.getData() );
             // if we weren't sent a board, we were given something bad, we need to escape now.
             else
-            {
-                this.go = false;
-                this.close();
-            }
+                throw new PlaceException("Board class never sent.");
+            // sets go to be true
+            this.go = true;
         }
         catch(IOException | ClassNotFoundException e)
         {

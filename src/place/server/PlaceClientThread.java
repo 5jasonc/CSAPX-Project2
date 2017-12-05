@@ -13,7 +13,12 @@ import place.network.NetworkServer;
 import place.network.PlaceRequest;
 import place.network.PlaceRequest.RequestType;
 
-public class PlaceClientThread extends Thread
+/**
+ * The PlaceClientThread is the server-sided class that listens to the client's input and relays it to the NetworkServer.
+ *
+ * @author Kevin Becker (kjb2503)
+ */
+public class PlaceClientThread
 {
     /**
      * The ObjectInputStream from the client (reads the requests that the client sends to server).
@@ -36,6 +41,7 @@ public class PlaceClientThread extends Thread
 
     /**
      * The indicator to the thread whether it should keep running or not.
+     *
      * If the thread should continue running this is true; false otherwise.
      */
     private boolean go;
@@ -48,6 +54,13 @@ public class PlaceClientThread extends Thread
     private synchronized boolean go()
     {
         return this.go;
+    }
+    /**
+     * Setter that is used to stop the thread in the event of need to stop.
+     */
+    private void stop()
+    {
+        this.go = false;
     }
 
 
@@ -81,10 +94,18 @@ public class PlaceClientThread extends Thread
     }
 
     /**
-     * An override of the run method which runs the thread.
+     * Starts a new thread used for the user using the run method of the class.
      */
-    @Override
-    public void run()
+    public void start()
+    {
+        // creates a new thread using run
+        new Thread(this::run).start();
+    }
+
+    /**
+     * Runs the PlaceClientThread.
+     */
+    private void run()
     {
         // while the connection is still alive
         while(this.go())
@@ -114,16 +135,21 @@ public class PlaceClientThread extends Thread
                         break;
                     case CHANGE_TILE:
                         PlaceTile tile = (PlaceTile) request.getData();
-                        // checks to make sure a move is valid then lets the networkServer know of a new tile change
-                        // request
-                        if(networkServer.isValid(tile))
+                        // if the move requested is valid, we make the move, otherwise we have to quit
+                        if(tileChangeRequest(tile))
                         {
-                            System.out.println("[PlaceClientThread]: " + this.username + " has changed a tile.");
+                            System.out.println("[Server]: " + this.username + " has requested to change a tile.");
                             System.out.println("\tNew tile: " + tile);
-                            tileChangeRequest(tile);
+                        }
+                        // otherwise we need to quit before it's too late
+                        else
+                        {
+                            System.err.println("[Server]: " + this.username + " has requested to change a tile that doesn't exist.");
+                            System.err.println("\t Terminating their connection.");
+                            badRequest("Tile not valid.");
                         }
                         break;
-                    // we shouldn't ever receive these from the player...
+                    // we shouldn't ever receive these from the player... they are bad requests
                     case BOARD:
                         badRequest(RequestType.BOARD.toString());
                         break;
@@ -143,42 +169,17 @@ public class PlaceClientThread extends Thread
             }
             catch(ClassNotFoundException e)
             {
-                // skip this read if there is a ClassNotFoundException
-                // might have to be a termination here if we run into it
+                // move to the next read and hopefully it wasn't important
             }
             catch(IOException e)
             {
                 // if we hit a IOException one of the connections closed we are assuming disconnection
-                this.go = false;
+                this.stop();
             }
         }
         // we have now exited the loop which means the user will be disconnecting now
         // we can close the Output and Input streams.
         this.close();
-    }
-
-    /**
-     * ****** MOVE CONTENTS TO NetworkServer ******
-     * If we receive a bad request from a client, we send a similar message for each of those, which we handle here.
-     *
-     * @param type The type of error that is run into for alerting user.
-     *
-     * @throws IOException If somehow we manage to get an IOException.
-     */
-    private void badRequest(String type) throws IOException
-    {
-        // alerts the user they sent a bad request as well as the type (if somehow we get here they are being naughty
-        // and using a custom client.)
-        // please don't be that person
-        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Bad request received: " + type + ". Terminating connection."));
-
-        // prints to the server log that user has sent a bad request
-        System.err.println("Bad request received from " + this.username + ". REQUEST: " + type);
-
-        // flushes the stream so it sends
-        out.flush();
-        // terminate thread
-        this.go = false;
     }
 
     /**
@@ -195,14 +196,30 @@ public class PlaceClientThread extends Thread
     }
 
     /**
+     * If we receive a bad request from a client, we send a similar message for each of those, which we handle here.
+     *
+     * @param type The type of error that is run into for alerting user.
+     *
+     * @throws IOException If somehow we manage to get an IOException.
+     */
+    private void badRequest(String type) throws IOException
+    {
+        // alert the user that they have sent us a bad request and that their connection is being terminated
+        this.networkServer.badRequest(this.username, type);
+
+        // terminate thread
+        this.stop();
+    }
+
+    /**
      * Requests the NetworkServer change the tile that user wants to change.
      *
-     * @param tile The tile that is being requested to change.
+     * @param tile The PlaceTile that is being requested to change.
      */
-    private void tileChangeRequest(PlaceTile tile)
+    private boolean tileChangeRequest(PlaceTile tile)
     {
         // tells the networkServer we want to change a tile
-        networkServer.tileChangeRequest(tile);
+        return this.networkServer.tileChangeRequest(tile);
     }
 
 
@@ -215,7 +232,7 @@ public class PlaceClientThread extends Thread
         {
             // logs user out from the server before closing connections if they were allowed logged in
             if(this.username != null)
-                networkServer.logout(this.username);
+                this.networkServer.logout(this.username);
             // closes the in and out connections
             this.in.close();
             this.out.close();

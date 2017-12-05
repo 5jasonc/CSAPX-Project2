@@ -9,6 +9,11 @@ import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A network middle-man for a Place server.
+ *
+ * @author Kevin Becker (kjb2503)
+ */
 public class NetworkServer
 {
     /**
@@ -98,10 +103,36 @@ public class NetworkServer
     }
 
     /**
+     * If the user provides a bad request (i.e. sending something only the server can send), we tell them that they gave
+     * us bad input so they can shutdown.
+     *
+     * @param username The username of the user that provided bad input.
+     * @param type The type of request that gave us the issue.
+     *
+     * @throws IOException If there is an issue communicating with the client.
+     */
+    public void badRequest(String username, String type) throws IOException
+    {
+        // gets the ObjectOutputStream associated with the username
+        ObjectOutputStream out = this.users.get(username);
+
+        // alerts the user they sent a bad request as well as the type (if somehow we get here they are being naughty
+        // and using a custom client.)
+        // please don't be that person
+        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Bad request received: " + type + ". Terminating connection."));
+
+        // prints to the server log that user has sent a bad request
+        System.err.println("[Server]: Bad request received from " + username + ". REQUEST: " + type);
+
+        // flushes the stream so it sends
+        out.flush();
+    }
+
+    /**
      * Logs a user out. Doesn't need to be synchronized since we won't have multiple people logged in with the same
      * username trying to log out.
      *
-     * THIS CONSTRUCTOR IS CALLED BY: PlaceClientThread
+     * THIS IS CALLED BY: PlaceClientThread
      *
      * @param username The username of the user wishing to log out.
      */
@@ -111,12 +142,7 @@ public class NetworkServer
         // since the ObjectOutputStream is just a pointer, this is all we have to do
         users.remove(username);
         // alert that user has disconnected
-        System.out.println("[NetworkServer]: " + username + " has left the server.");
-    }
-
-    public boolean isValid(PlaceTile tile)
-    {
-        return this.board.isValid(tile);
+        System.out.println("[Server]: " + username + " has left the server.");
     }
 
     /**
@@ -127,30 +153,45 @@ public class NetworkServer
      *
      * @param tile the PlaceTile request that was made.
      */
-    public synchronized void tileChangeRequest(PlaceTile tile)
+    public synchronized boolean tileChangeRequest(PlaceTile tile)
     {
-        // creates our changedTile request to send to all users
-        PlaceRequest<PlaceTile> changedTile = new PlaceRequest<>(PlaceRequest.RequestType.TILE_CHANGED, tile);
-        // loops through each user that is currently connected
-        for( ObjectOutputStream out : users.values() )
+        if(isValid(tile))
         {
-            try
-            {
-                // writes out our changed tile
-                out.writeObject(changedTile);
-                // sets the place in the board that was just changed
-                this.board.setTile(tile);
+            // creates our changedTile request to send to all users
+            PlaceRequest<PlaceTile> changedTile = new PlaceRequest<>(PlaceRequest.RequestType.TILE_CHANGED, tile);
+            // loops through each user that is currently connected
+            for (ObjectOutputStream out : users.values()) {
+                try {
+                    // writes out our changed tile
+                    out.writeObject(changedTile);
+                    // sets the place in the board that was just changed
+                    this.board.setTile(tile);
+                } catch (IOException e) {
+                    // oops
+                }
             }
-            catch(IOException e)
-            {
-                // oops
-            }
+            // once we've gone through every user we van return true
+            return true;
         }
+        // if we get here something is no good!
+        return false;
     }
 
     /**
-     * In the event of a catastrophic server error, we tell the clients that we've experienced an error so they may
-     * shutdown gracefully.
+     * Checks to see if a move is valid or not before requesting a tile change.
+     *
+     * @param tile the PlaceTile that is being checked for validity.
+     *
+     * @return A boolean. True if the PlaceTile is valid for the board; false otherwise.
+     */
+    private boolean isValid(PlaceTile tile)
+    {
+        return this.board.isValid(tile);
+    }
+
+    /**
+     * In the event of a catastrophic server error, we attempt to tell the clients that we've experienced an error so
+     * they may shutdown gracefully.
      */
     public void serverError()
     {
