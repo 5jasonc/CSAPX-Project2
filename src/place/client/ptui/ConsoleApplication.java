@@ -12,20 +12,6 @@ import java.util.Scanner;
  * A class to do console-based user interaction in a manner similar to
  * how JavaFX does window-based interaction.
  * This class is to be inherited by any console application.
- * When {@link #launch(Class,String[])} is called with the subclass object, an
- * instance of the given class is created and the argument array is saved.
- * (There must be a default constructor.)
- * The subclass's {@link #go(Scanner, PrintWriter) start} method
- * is called in a separate thread, causing
- * {@link #go(Scanner, PrintWriter) start} to return immediately.
- * This method is supplied with a Scanner and Writer connected to
- * a console (terminal).
- * The subclass may optionally override {@link #init() init} and
- * {@link #stop() stop} to do additional setup and teardown.
- * {@link #go(Scanner, PrintWriter)} (Scanner, PrintWriter) start} runs
- * after {@link #init() init}. After the
- * {@link #go(Scanner, PrintWriter)} (Scanner, PrintWriter) start} method
- * returns, {@link #stop() stop} is executed.
  *
  * @author James Heliotis
  * Edits made by Jason Streeter (jcs1738)
@@ -38,22 +24,6 @@ public abstract class ConsoleApplication {
 
     /**
      * Run a console application.
-     * <ol>
-     * <li>An instance of a ConsoleApplication subclass is created.</li>
-     * <li>The class's default constructor is run.</li>
-     * <li>The subclass's {@link #init() init} method is run.</li>
-     * <li>A {@link Scanner Scanner} and
-     * {@link java.io.Writer Writer} are created and connected to a
-     * text console (currently stdin and stdout).</li>
-     * <li>A new thread is spawned. It calls the subclass's
-     * {@link #go(Scanner, PrintWriter)} method
-     * with the {@link Scanner} and
-     * {@link java.io.Writer} as arguments.</li>
-     * <li>(At this point the {@code launch} method returns.)</li>
-     * <li>When the {@link #go(Scanner, PrintWriter)} method
-     * returns the subclass's {@link #stop() stop} method is run.</li>
-     * </ol>
-     *
      * @param ptuiClass the class object that refers to the class to
      *             be instantiated
      */
@@ -65,23 +35,6 @@ public abstract class ConsoleApplication {
 
     /**
      * Run a console application, with command line arguments.
-     * <ol>
-     * <li>An instance of a ConsoleApplication subclass is created.</li>
-     * <li>The passed in string arguments are copied and saved.</li>
-     * <li>The class's default constructor is run.</li>
-     * <li>The subclass's {@link #init() init} method is run.</li>
-     * <li>A {@link Scanner Scanner} and
-     * {@link java.io.Writer Writer} are created and connected to a
-     * text console (currently stdin and stdout).</li>
-     * <li>A new thread is spawned. It calls the subclass's
-     * {@link #go(Scanner, PrintWriter)} method
-     * with the {@link Scanner} and
-     * {@link java.io.Writer} as arguments.</li>
-     * <li>(At this point the {@code launch} method returns.)</li>
-     * <li>When the {@link #go(Scanner, PrintWriter)} method
-     * returns the subclass's {@link #stop() stop} method is run.</li>
-     * </ol>
-     *
      * @param ptuiClass the class object that refers to the class to
      *             be instantiated
      * @param args the array of strings from the command line
