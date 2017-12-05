@@ -1,7 +1,9 @@
 package place.client.ptui;
 
 import place.PlaceBoardObservable;
+import place.PlaceColor;
 import place.PlaceException;
+import place.PlaceTile;
 import place.network.NetworkClient;
 
 import java.io.*;
@@ -38,7 +40,7 @@ public class PlacePTUI extends ConsoleApplication implements Observer
         super.init();
 
         this.parameters = super.getArguments();
-        // Get named command line arguments to be used
+        // Get command line arguments to be used
         String hostname = this.parameters.get(0);
         int port = Integer.parseInt(this.parameters.get(1));
         this.username = this.parameters.get(2);
@@ -49,45 +51,113 @@ public class PlacePTUI extends ConsoleApplication implements Observer
         try
         {
             // Connects with the NetworkClient to communicate with PlaceServer
-            serverConn = new NetworkClient(hostname, port, this.username, getClass().getSimpleName(), this.model);
+            this.serverConn = new NetworkClient(hostname, port, this.username, getClass().getSimpleName(), this.model);
         }
         catch(Exception e)
         {
             System.err.println("Error connecting with Place server...");
+            this.serverConn.close();
             System.err.println(e.getMessage());
             System.exit(1);
         }
     }
 
-
-
     /**
      * Constructs the board we will use and then prints it out
-     * @param in Scanner that reads the user's input
-     * @param out Communication with PlaceServer
      */
     @Override
-    public synchronized void go(Scanner in, PrintWriter out) throws Exception {
+    public synchronized void go( Scanner in ) throws Exception {
+        // begins thread for NetworkClient to listen to server
+        this.serverConn.start();
+
         // make PTUI an observer of the board
         this.model.addObserver(this);
 
-        // begins thread for NetworkClient to listen to server
-        serverConn.start();
-
         // Display current board now it has been built
-        System.out.println(toString());
+        printBoard();
+
+        this.go = true;
+
+        // Creates new thread to run user operations
+        new Thread( () -> this.run( in )).start();
     }
 
+    /**
+     * Thread that gets run to check for user input
+     */
+    public void run( Scanner in ) {
+        while(this.go) {
+            String [] playerInput = in.nextLine().trim().split(" ");
+            PlaceTile newTile;
+
+            // Check if user exits program
+            if(playerInput[0].equals("-1")) {
+                this.go = false;
+            }
+            else {
+                // Otherwise check for player input of where to place move
+                int placeRow = Integer.parseInt(playerInput[0]);
+
+                int placeCol = Integer.parseInt(playerInput[1]);
+                int color = Integer.parseInt(playerInput[2]);
+
+                // Checks if color user selected is valid
+                if(color <= 15 && color >= 0) {
+                    // Get color user wants to place
+                    PlaceColor newColor = PlaceColor.values()[color];
+
+                    // Sends user's move to the server
+                    newTile = new PlaceTile(placeRow, placeCol, this.username, newColor, System.currentTimeMillis());
+
+                    // Checks to see if a valid tile was selected and sends it to server if it is
+                    if(this.model.getBoard().isValid(newTile)) {
+                        this.serverConn.sendTile(newTile);
+                    }
+                    else {
+                        this.serverConn.logErr("Please select a valid tile on the board.");
+                    }
+                }
+                else {
+                    this.serverConn.logErr("Please select a color value between 0-15.");
+                }
+            }
+        }
+    }
+
+    /**
+     * Closes connection with Place server
+     */
     @Override
     public void stop() {
         super.stop();
-        serverConn.close();
+        this.serverConn.close();
     }
 
+    /**
+     * Update the state of our model with user input from the console.
+     */
+    private void refresh() {
+        printBoard();
+    }
+
+    /**
+     * Used to update our model
+     * @param o Our model of the board we are observing
+     * @param arg An object -- Not used
+     */
     @Override
     public void update(Observable o, Object arg)
     {
+        assert o == this.model: "Update from an incorrect model of the board...";
 
+        this.refresh();
+    }
+
+    /**
+     * Prints the state of our current board
+     */
+    private void printBoard() {
+        System.out.println(this.model.getBoard());
     }
 
     public static void main(String[] args) {
@@ -98,10 +168,5 @@ public class PlacePTUI extends ConsoleApplication implements Observer
         }
 
         ConsoleApplication.launch(PlacePTUI.class, args);
-    }
-
-    @Override
-    public String toString() {
-        return this.model.getBoard().toString();
     }
 }

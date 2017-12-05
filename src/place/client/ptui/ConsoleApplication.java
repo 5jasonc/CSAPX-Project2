@@ -122,14 +122,9 @@ public abstract class ConsoleApplication {
         public Runner( ConsoleApplication ptuiApp ) { this.ptuiApp = ptuiApp; }
 
         public void run() {
-            // We don't put the PrintWriter in try-with-resources because
-            // we don't want it to be closed. The Scanner can close.
-            PrintWriter out;
-            try ( Scanner consoleIn = new Scanner( System.in ) ) {
+            try ( Scanner in = new Scanner( System.in ) ) {
                 try {
-                    out = new PrintWriter(
-                            new OutputStreamWriter( System.out ), true );
-                    ptuiApp.go( consoleIn, out );
+                    ptuiApp.go( in );
                 }
                 catch( Exception e ) {
                     e.printStackTrace();
@@ -160,11 +155,8 @@ public abstract class ConsoleApplication {
      * {@link javafx.application.Application#start(javafx.stage.Stage)}
      * to emphasize that this method can keep executing (looping,
      * probably) as long as the application is running.
-     *
-     * @param consoleIn  the source of the user input
-     * @param consoleOut the destination where text output should be printed
      */
-    public abstract void go( Scanner consoleIn, PrintWriter consoleOut ) throws Exception;
+    public abstract void go( Scanner in ) throws Exception;
 
     /**
      * A do-nothing teardown method that can be overwritten by subclasses
