@@ -11,6 +11,8 @@ import java.io.ObjectOutputStream;
 
 import java.net.Socket;
 
+import static java.lang.Thread.sleep;
+
 // fully commented
 
 /**
@@ -19,6 +21,11 @@ import java.net.Socket;
  * @author Kevin Becker (kjb2503)
  */
 public class NetworkClient {
+
+    /**
+     * The number of milliseconds a user must wait before they can send their next tile.
+     */
+    private final static int COOLDOWN_TIME = 500;
 
     /**
      * Our observable PlaceBoard wrapper.
@@ -41,11 +48,18 @@ public class NetworkClient {
     private ObjectOutputStream out;
 
     /**
+     * The simple name of the class that started the NetworkClient
+     */
+    private String className;
+
+    /**
      * The indicator to the thread whether it should keep running or not.
      *
      * If the thread should continue running this is true; false otherwise.
      */
     private boolean go;
+
+    private boolean sleeping;
 
     /**
      * This is used by the thread to make sure it should keep going.
@@ -76,11 +90,13 @@ public class NetworkClient {
      * @throws PlaceException If there is any exception thrown during the connect process that prevents successful
      *                        usage of the server.
      */
-    public NetworkClient(String host, int port, String username, PlaceBoardObservable board) throws PlaceException
+    public NetworkClient(String host, int port, String username, String className, PlaceBoardObservable board) throws PlaceException
     {
         // BEGIN SETTING UP NEW NetworkClient
         try
         {
+            // SETTING CLASS NAME (for log) ================================
+            this.className = className;
             // CONNECTION BUILDING SEQUENCE ================================
             // connects to the server
             this.serverConn = new Socket(host, port);
@@ -106,14 +122,14 @@ public class NetworkClient {
             switch (response.getType())
             {
                 case LOGIN_SUCCESS:
-                    System.out.println("[Server]: Successfully joined Place server as \"" + response.getData() + "\".");
+                    this.log("Successfully joined Place server as \"" + response.getData() + "\".");
                     break;
                 case ERROR:
-                    System.err.println("[Server]: Failed to join Place server. Server response: " + response.getData() + ".");
+                    this.logErr("Failed to join Place server. Server response: " + response.getData() + ".");
                     this.close();
                     throw new PlaceException("Unable to join.");
                 default:
-                    System.err.println("[Server]: Bad response received from server.");
+                    this.logErr("Bad response received from server.");
                     this.close();
                     throw new PlaceException("Unable to join.");
             }
@@ -207,19 +223,49 @@ public class NetworkClient {
      *
      * @param tile The tile that is being requested to change. (It contains all the necessary information).
      */
-    public void sendTile(PlaceTile tile)
+    public synchronized void sendTile(PlaceTile tile)
     {
+        if(!this.sleeping)
+        {
+            // writes the tile to the server
+            try
+            {
+                // write the tile to the output buffer
+                this.out.writeUnshared(new PlaceRequest<>(PlaceRequest.RequestType.CHANGE_TILE, tile));
+                // flushes the object written out
+                out.flush();
+            }
+            catch(IOException e)
+            {
+                // do nothing
+            }
+            // spawns a thread that exists for 500ms which forces the user to wait 500ms from one send to the next
+            new Thread(this::coolDown).start();
+        }
+        else
+        {
+            this.logErr("You must wait half a second between each tile place");
+        }
+    }
+
+    /**
+     * A small sleeper thread class which makes it so a user cannot send any PlaceTile for 500ms. (A cool-down)
+     */
+    private void coolDown()
+    {
+        // sleeps
+        this.sleeping = true;
+        // sleeps for 500ms
         try
         {
-            // write the tile to the output buffer
-            this.out.writeUnshared(new PlaceRequest<>(PlaceRequest.RequestType.CHANGE_TILE, tile));
-            // flushes the object written out
-            out.flush();
+            Thread.sleep(COOLDOWN_TIME);
         }
-        catch (IOException e)
+        catch(InterruptedException e)
         {
-            // we can't do anything with this so...
+            /* do nothing */
         }
+        // stops sleeping
+        this.sleeping = false;
     }
 
     /**
@@ -240,6 +286,7 @@ public class NetworkClient {
      */
     private void error(String error)
     {
+        this.logErr("Server responded with error message: \"" + error + "\"");
         System.err.println("[Client]: Server responded with error message: \"" + error + "\"");
         this.stop();
     }
@@ -249,8 +296,18 @@ public class NetworkClient {
      */
     private void badResponse()
     {
-        System.err.println("[Client]: Bad response received from server. Terminating connection.");
+        this.logErr("Bad response received from server. Terminating connection.");
         this.stop();
+    }
+
+    public void log(String msg)
+    {
+        System.out.println("[" + this.className + "]: " + msg);
+    }
+
+    public void logErr(String msg)
+    {
+        System.err.println("[" + this.className + "]: " + msg);
     }
 
     /**

@@ -14,46 +14,42 @@ import static java.lang.Thread.sleep;
 // fully commented
 
 /**
- * A type of Bot client that connects to a PlaceServer and performs actions that FILL the screen with color.
+ * A multithreaded Bot client that connects to a PlaceServer and performs actions that FILL the screen with color.
  *
  * @author Kevin Becker (kjb2503)
  */
-public class FillBot extends BotApplication {
+public class FillBot extends BotApplication implements BotProtocol {
 
     /**
      * The list of PlaceColor choices that the user can select from.
      */
     private static List<PlaceColor> COLOR_CHOICES;
 
+    // A few custom commands
+    /**
+     * The STICKY command is called to make the color which the FillBot places stay constant.
+     */
+    private static final String STICKY = "sticky";
+
+    /**
+     * The CYCLE command is called to make the color which the FillBot places occur once it fills the entire screen.
+     */
+    private static final String CYCLE = "cycle";
+
+    /**
+     * The RAINBOW command is called to make the color which the Bot places change every tile to the next color.
+     */
+    private static final String RAINBOW = "rainbow";
+
+    /**
+     * The RANDOM command is called to make the color which the Bot places random
+     */
+    private static final String RANDOM = "random";
+
     /**
      * The minimum color we can choose (located at index 0)
      */
     private static final int MIN_COLOR = 0;
-
-    /**
-     * The maximum color we can choose (located at index TOTAL_COLORS - 1)
-     */
-    private static final int MAX_COLOR = PlaceColor.TOTAL_COLORS - 1;
-
-    /**
-     * The prompt String that is posted every time a user should provide input.
-     */
-    private final static String PROMPT = ">>>";
-
-    /**
-     * The minimum number of milliseconds to wait between each place of a PlaceTile.
-     */
-    private final static int MAX_SPEED = 2000;
-
-    /**
-     * The default number of milliseconds to wait between each place of a PlaceTile.
-     */
-    private final static int DEFAULT_SPEED = 50;
-
-    /**
-     * The maximum number of milliseconds to wait between each place of a PlaceTile.
-     */
-    private final static int MIN_SPEED = 20;
 
     //=============================================
 
@@ -95,6 +91,8 @@ public class FillBot extends BotApplication {
      * If the thread should be in rainbow mode this is true; false otherwise.
      */
     private boolean rainbow;
+
+    private boolean random;
 
     /**
      * The indicator to the thread whether it should keep running or not.
@@ -159,7 +157,7 @@ public class FillBot extends BotApplication {
         {
             // sets our network client, this is the last thing we do to minimize time between receiving the board and
             // opening the Bot
-            this.serverConn = new NetworkClient(host, port, username, model);
+            this.serverConn = new NetworkClient(host, port, this.username, getClass().getSimpleName(), this.model);
         }
         catch(PlaceException e)
         {
@@ -179,7 +177,7 @@ public class FillBot extends BotApplication {
     public void start()
     {
         // logs that the setup is complete
-        log("Setup complete. Bot is starting.");
+        this.serverConn.log("Setup complete. Bot is starting.");
 
         // starts the serverCon listening (not really used because the bot doesn't display the board at all)
         this.serverConn.start();
@@ -217,23 +215,23 @@ public class FillBot extends BotApplication {
             // if not recognized, a message is print saying so
             switch(command)
             {
-                case "help":
+                case HELP:
                     printHelp();
                     break;
                 // quit or exit can be used (just in case)
-                case "exit":
-                case "quit":
+                case EXIT:
+                case QUIT:
                     exit();
                     break;
-                case "pause":
-                case "stop":
+                case PAUSE:
+                case STOP:
                     pause();
                     break;
-                case "resume":
-                case "play":
+                case RESUME:
+                case PLAY:
                     resume();
                     break;
-                case "speed":
+                case SPEED:
                     // if we were given a speed we use it
                     if(tokens[0].equals(""))
                         speed();
@@ -244,22 +242,27 @@ public class FillBot extends BotApplication {
                         catch(NumberFormatException e) { badCommand(command + " " + tokens[0]); }
                     }
                     break;
-                case "sticky":
+                case STICKY:
                     // if we were given a color we use it
                     if(tokens[0].equals(""))
+                    {
                         sticky();
                         // otherwise we use the default method
+                    }
                     else
                     {
                         try { sticky(Integer.parseInt(tokens[0])); }
                         catch(NumberFormatException e) { badCommand(command + " " + tokens[0]); }
                     }
                     break;
-                case "cycle":
+                case CYCLE:
                     cycle();
                     break;
-                case "rainbow":
+                case RAINBOW:
                     rainbow();
+                    break;
+                case RANDOM:
+                    random();
                     break;
                 default:
                     badCommand(command);
@@ -274,16 +277,17 @@ public class FillBot extends BotApplication {
     {
         System.out.println(
             "----------------------------------------- Commands -----------------------------------------\n" +
-            "| help : display this information again.\n" +
-            "| quit : exits the bot cleanly.\n" +
-            "| pause : pauses the bot at its current tile.\n" +
-            "| resume : resumes the bots cycle at its current tile.\n"+
-            "| speed [number] : sets the time in milliseconds between each tile the bot places.\n"+
-            "|\t (note: the number is optional, it must be an integer 20-2000.)\n" +
-            "| sticky [color] : keeps the bot on a single color.\n" +
-            "| \t (note: the color is optional, it must be an integer 0-15.)\n" +
-            "| cycle : fills the board with a single color then goes to the next.\n" +
-            "| rainbow : change color for every tile placed.\n"+
+            "  help : display this information again.\n" +
+            "  quit : exits the bot cleanly.\n" +
+            "  pause : pauses the bot at its current tile.\n" +
+            "  resume : resumes the bots cycle at its current tile.\n"+
+            "  speed [number] : sets the time in milliseconds between each tile the bot places.\n"+
+            "  \t (note: number must be " + MIN_SPEED + "-" + MAX_SPEED + "; if none given, speed is set to 1000.)\n" +
+            "  sticky [color] : keeps the bot on a single color.\n" +
+            "  \t (note: color must be " + MIN_COLOR + "-" + MAX_COLOR + "; if none given, color is set to the currently selected.)\n" +
+            "  cycle : fills the board with a single color then goes to the next.\n" +
+            "  rainbow : change color to the next color for every tile placed.\n"+
+            "  random : change the color to a random color for every tile placed." +
             "--------------------------------------------------------------------------------------------"
         );
     }
@@ -294,7 +298,7 @@ public class FillBot extends BotApplication {
     private void exit()
     {
         // logs we are exiting
-        log("Exiting the Bot.");
+        this.serverConn.log("Exiting the Bot.");
         // sets go to false indicating to the thread it needs to stop
         this.go = false;
     }
@@ -305,7 +309,7 @@ public class FillBot extends BotApplication {
     private void pause()
     {
         // logs we are pausing the fill
-        log("Pausing the fill. To resume, use \"resume\".");
+        this.serverConn.log("Pausing the fill. To resume, use \"resume\".");
         // pauses the fill
         this.pause = true;
     }
@@ -316,7 +320,7 @@ public class FillBot extends BotApplication {
     private void resume()
     {
         // logs that we will resume
-        log("Resuming the fill.");
+        this.serverConn.log("Resuming the fill.");
         // resumes the fill
         this.pause = false;
     }
@@ -326,6 +330,7 @@ public class FillBot extends BotApplication {
      */
     private void speed()
     {
+        // resets the speed to default
         speed(DEFAULT_SPEED);
     }
 
@@ -343,7 +348,7 @@ public class FillBot extends BotApplication {
             return;
         }
         // tell the user we are now setting our speed
-        log("Setting the place speed to " + speed + "ms.");
+        this.serverConn.log("Setting the place speed to " + speed + "ms.");
         // sets our speed
         this.speed = speed;
     }
@@ -372,7 +377,7 @@ public class FillBot extends BotApplication {
         }
 
         // if we've made it here, we can log that we are making a change
-        log("Changing to sticky mode on color " + color + ".");
+        this.serverConn.log("Changing to sticky mode on color " + color + ".");
 
         // sets the current color
         this.currentColor = color;
@@ -380,6 +385,7 @@ public class FillBot extends BotApplication {
         // sets us in sticky mode
         this.sticky = true;
         this.rainbow = false;
+        this.random = false;
     }
 
     /**
@@ -388,11 +394,12 @@ public class FillBot extends BotApplication {
     private void cycle()
     {
         // logs we are gong to cycle mode
-        log("Changing to cycle mode.");
+        this.serverConn.log("Changing to cycle mode.");
 
         // sets us in cycle mode
-        this.rainbow = false;
         this.sticky = false;
+        this.rainbow = false;
+        this.random = false;
     }
 
     /**
@@ -401,11 +408,26 @@ public class FillBot extends BotApplication {
     private void rainbow()
     {
         // logs that we are changing modes
-        log("Get ready to see color!");
-        // sets sticky to false
+        this.serverConn.log("Get ready to see color!");
+
+        // sets us in rainbow mode
         this.sticky = false;
-        // sets rainbow to true
         this.rainbow = true;
+        this.random = false;
+    }
+
+    /**
+     * Sets the mode of the Bot to be random mode.
+     */
+    private void random()
+    {
+        // logs we are switching to random mode
+        this.serverConn.log("Changing to random mode.");
+
+        // sets us in random mode
+        this.sticky = false;
+        this.rainbow = false;
+        this.random = true;
     }
 
     /**
@@ -416,7 +438,7 @@ public class FillBot extends BotApplication {
     private void badCommand(String command)
     {
         // logs that a bad command was given
-        log("\"" + command + "\" is not recognized as a command.");
+        this.serverConn.log("\"" + command + "\" is not recognized as a command.");
     }
 
     /**
@@ -466,9 +488,12 @@ public class FillBot extends BotApplication {
                 if( currentCol == 0 )
                     currentRow = (++currentRow) % rows;
 
-                // sets the color to the next in the list if needed
-                if((currentRow == 0 && currentCol == 0  || this.rainbow) && !this.sticky)
-                    this.currentColor = (currentColor + 1) % COLOR_CHOICES.size();
+                // sets us to a new color if needed
+                if(currentRow == 0 && currentCol == 0  && !sticky)
+                {
+                    this.currentColor = (this.random) ? ((int)Math.round(((Math.random()+ 1) * COLOR_CHOICES.size() + 1))) :
+                                                        ((currentColor + 1) % COLOR_CHOICES.size());
+                }
 
                 // sleeps for however long speed is set to
                 try { sleep(this.speed); } catch(InterruptedException ie){/* do nothing we don't care */}

@@ -49,7 +49,7 @@ public class PlacePTUI extends ConsoleApplication implements Observer
         try
         {
             // Connects with the NetworkClient to communicate with PlaceServer
-            serverConn = new NetworkClient(hostname, port, this.username, model);
+            serverConn = new NetworkClient(hostname, port, this.username, getClass().getSimpleName(), this.model);
         }
         catch(Exception e)
         {

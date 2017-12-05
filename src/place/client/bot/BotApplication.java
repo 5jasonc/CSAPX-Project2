@@ -25,11 +25,6 @@ public abstract class BotApplication {
     private Thread botThread;
 
     /**
-     * Used in the log() method when a log is being printed.
-     */
-    private String className;
-
-    /**
      * Run a bot application.
      * Launch a standalone application. This method is typically called from the main method().
      * It must not be called more than once or an exception will be thrown. This is equivalent to launch(TheClass.class, args) where TheClass is the immediately enclosing class of the method that called launch. It must be a subclass of Application or a RuntimeException will be thrown.
@@ -65,8 +60,6 @@ public abstract class BotApplication {
             BotApplication bot = botClass.newInstance();
             // makes a copy of the arguments
             bot.arguments = Arrays.copyOf( args, args.length );
-            // sets the class name which is used in the log
-            bot.className = botClass.getSimpleName();
 
             try
             {
@@ -115,11 +108,6 @@ public abstract class BotApplication {
     List< String > getArguments()
     {
         return Arrays.asList(this.arguments );
-    }
-
-    void log(String msg)
-    {
-        System.out.println("[" + this.className + "]: " + msg);
     }
 
     /**

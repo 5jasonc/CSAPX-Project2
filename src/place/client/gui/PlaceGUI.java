@@ -172,7 +172,7 @@ public class PlaceGUI extends Application implements Observer {
         {
             // sets our network client, this is the last thing we do to minimize time between receiving the board and
             // opening the GUI
-            this.serverConn = new NetworkClient(host, port, username, model);
+            this.serverConn = new NetworkClient(host, port, this.username, getClass().getSimpleName(), this.model);
         }
         catch(PlaceException e)
         {
@@ -495,7 +495,7 @@ public class PlaceGUI extends Application implements Observer {
         else
         {
             // in the VERY unlikely event we're sent something weird from PlaceBoardObservable, we redraw the entire board.
-            System.err.println("Hmmm... Our board has sent us something and we don't know what it is.\n" +
+            this.serverConn.logErr("Hmmm... Our board has sent us something and we don't know what it is.\n" +
                     "We will now recreate our board to make sure everything is correct. It should only take a second");
             redrawGrid();
         }
