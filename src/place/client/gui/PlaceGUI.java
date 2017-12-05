@@ -34,12 +34,6 @@ import place.PlaceBoardObservable;
  * @author Kevin Becker (kjb2503)
  */
 public class PlaceGUI extends Application implements Observer {
-
-    /**
-     * The possible color choices represented as a List.
-     */
-    private static List<PlaceColor> COLOR_CHOICES;
-
     /**
      * The arc size that is used to curve corners on any rectangle.
      */
@@ -116,13 +110,13 @@ public class PlaceGUI extends Application implements Observer {
     /**
      * A Rectangle which has a preview of the currently selected color.
      */
-    private Rectangle selectedColorPreview;
+    private Circle selectedColorPreview;
 
     // TILE PREVIEW ===============================
     /**
      * The preview circle that is the color of the PlaceTile that the mouse is currently hovering over.
      */
-    private Circle tilePreview;
+    private Rectangle tilePreview;
 
     /**
      * The location of the PlaceTile that the mouse is currently over.
@@ -321,7 +315,7 @@ public class PlaceGUI extends Application implements Observer {
         // sets an event listener to our rectangle to listen for clicks on this tile
         tileRectangle.setOnMouseClicked(
                 (ActionEvent) -> this.serverConn.sendTile(
-                        new PlaceTile(row, col, this.username, COLOR_CHOICES.get(this.currentColor), System.currentTimeMillis())
+                        new PlaceTile(row, col, this.username, PlaceColor.values()[this.currentColor], System.currentTimeMillis())
                 )
         );
 
@@ -349,7 +343,7 @@ public class PlaceGUI extends Application implements Observer {
         colorBar.setAlignment(Pos.CENTER);
 
         // builds all of our color choices into rectangles
-        for( PlaceColor color : COLOR_CHOICES)
+        for( PlaceColor color : PlaceColor.values())
         {
             // creates a new Rectangle Object with size RECT_SIZE/2, RECT_SIZE/2, and bg color according to color
             Rectangle colorChoice = new Rectangle(RECT_SIZE/2, RECT_SIZE/2,
@@ -386,7 +380,7 @@ public class PlaceGUI extends Application implements Observer {
         this.currentColor = color;
 
         // sets our new color so we can use it later
-        PlaceColor selectedColor = COLOR_CHOICES.get(color);
+        PlaceColor selectedColor = PlaceColor.values()[color];
 
         // updates our selected color information
         javafx.application.Platform.runLater(
@@ -429,10 +423,10 @@ public class PlaceGUI extends Application implements Observer {
         Text selectedColorPre = new Text("Selected color");
 
         // builds the selected color portion
-        PlaceColor selected = COLOR_CHOICES.get(currentColor);
+        PlaceColor selected = PlaceColor.values()[this.currentColor];
         this.selectedColorName = new Text(selected.name());
-        this.selectedColorPreview = new Rectangle(
-                RECT_SIZE, RECT_SIZE, Color.rgb(selected.getRed(), selected.getGreen(), selected.getBlue())
+        this.selectedColorPreview = new Circle(
+                RECT_SIZE/2, Color.rgb(selected.getRed(), selected.getGreen(), selected.getBlue())
         );
 
         // stylizes our items
@@ -440,8 +434,6 @@ public class PlaceGUI extends Application implements Observer {
         this.selectedColorName.setFill(Color.WHITE);
         this.selectedColorPreview.setStroke(Color.DARKGREY);
         this.selectedColorPreview.setStrokeWidth(1.5);
-        this.selectedColorPreview.setArcHeight(ARC_SIZE);
-        this.selectedColorPreview.setArcWidth(ARC_SIZE);
 
         // SPACER ============================
         // builds a new spacer and sets its priority to always
@@ -451,7 +443,9 @@ public class PlaceGUI extends Application implements Observer {
         // TILE INFO ============================
         // builds the tile preview
         Text tileInfoHeader = new Text("Tile info");
-        this.tilePreview = new Circle( RECT_SIZE/2, Color.BLACK );
+        this.tilePreview = new Rectangle(
+                RECT_SIZE, RECT_SIZE, Color.rgb(selected.getRed(), selected.getGreen(), selected.getBlue())
+        );
         this.tileLocationInfo = new Text("(0,0)");
         this.tileOwnerInfo = new Text("Owner");
         this.tileCreateDateInfo = new Text("12/31/69");
@@ -561,8 +555,6 @@ public class PlaceGUI extends Application implements Observer {
             System.err.println("$ java PlaceGUI host port username");
             return;
         }
-
-        COLOR_CHOICES = Arrays.asList(PlaceColor.values());
 
         try
         {

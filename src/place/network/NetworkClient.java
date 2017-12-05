@@ -48,9 +48,9 @@ public class NetworkClient {
     private ObjectOutputStream out;
 
     /**
-     * The simple name of the class that started the NetworkClient
+     * A "header" of sorts that is printed before every log.
      */
-    private String className;
+    private String logHeader;
 
     /**
      * The indicator to the thread whether it should keep running or not.
@@ -59,6 +59,12 @@ public class NetworkClient {
      */
     private boolean go;
 
+    /**
+     * A boolean that indicates if this client is sleeping.
+     *
+     * If it is sleeping the client cannot send a new piece. If it is true, and a client tries to send a PlaceTile,
+     * it displays an error.
+     */
     private boolean sleeping;
 
     /**
@@ -96,7 +102,7 @@ public class NetworkClient {
         try
         {
             // SETTING CLASS NAME (for log) ================================
-            this.className = className;
+            this.logHeader = "[" + className + "]: ";
             // CONNECTION BUILDING SEQUENCE ================================
             // connects to the server
             this.serverConn = new Socket(host, port);
@@ -122,14 +128,14 @@ public class NetworkClient {
             switch (response.getType())
             {
                 case LOGIN_SUCCESS:
-                    this.log("Successfully joined Place server as \"" + response.getData() + "\".");
+                    log("Successfully joined Place server as \"" + response.getData() + "\".");
                     break;
                 case ERROR:
-                    this.logErr("Failed to join Place server. Server response: " + response.getData() + ".");
+                    logErr("Failed to join Place server. Server response: " + response.getData() + ".");
                     this.close();
                     throw new PlaceException("Unable to join.");
                 default:
-                    this.logErr("Bad response received from server.");
+                    logErr("Bad response received from server.");
                     this.close();
                     throw new PlaceException("Unable to join.");
             }
@@ -244,14 +250,14 @@ public class NetworkClient {
         }
         else
         {
-            this.logErr("You must wait half a second between each tile place");
+            logErr("You must wait half a second between each tile place");
         }
     }
 
     /**
      * A small sleeper thread class which makes it so a user cannot send any PlaceTile for 500ms. (A cool-down)
      */
-    private void coolDown()
+    private synchronized void coolDown()
     {
         // sleeps
         this.sleeping = true;
@@ -286,7 +292,7 @@ public class NetworkClient {
      */
     private void error(String error)
     {
-        this.logErr("Server responded with error message: \"" + error + "\"");
+        logErr("Server responded with error message: \"" + error + "\"");
         System.err.println("[Client]: Server responded with error message: \"" + error + "\"");
         this.stop();
     }
@@ -296,18 +302,22 @@ public class NetworkClient {
      */
     private void badResponse()
     {
-        this.logErr("Bad response received from server. Terminating connection.");
+        logErr("Bad response received from server. Terminating connection.");
         this.stop();
     }
 
     public void log(String msg)
     {
-        System.out.println("[" + this.className + "]: " + msg);
+        System.out.println(logHeader + msg);
     }
 
+    /**
+     * Logs an ERROR message to standard output if any sort of information is
+     * @param msg
+     */
     public void logErr(String msg)
     {
-        System.err.println("[" + this.className + "]: " + msg);
+        System.err.println(logHeader + msg);
     }
 
     /**

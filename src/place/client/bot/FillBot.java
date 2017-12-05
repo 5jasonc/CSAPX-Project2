@@ -190,6 +190,55 @@ public class FillBot extends BotApplication implements BotProtocol {
     }
 
     /**
+     * The run method is used to loop through the Fill action.
+     */
+    private void run()
+    {
+        // used to indicate the current row and column
+        int currentRow = 0;
+        int currentCol = 0;
+        // gets the highest row and column we can go to and subtracts
+        int rows = this.model.getDIM();
+        int cols = this.model.getDIM();
+
+        // keeps going until the go boolean is set to false
+        while(this.go())
+        {
+            // if we're paused, sleep for a second and then try again
+            if(this.paused())
+            {
+                try { sleep(1000); } catch(InterruptedException ie){/* do nothing just continue forward */}
+            }
+            // otherwise place the next tile
+            else
+            {
+                // send a tile
+                this.serverConn.sendTile(
+                        new PlaceTile(currentRow, currentCol, this.username,
+                                COLOR_CHOICES.get(this.currentColor), System.currentTimeMillis())
+                );
+                // adds one to row and mod by cols (this way it sets to 0 if needed)
+                currentCol = (++currentCol) % cols;
+
+                // if col was reset, add one to row and mod by total rows (this way it sets to 0 if needed)
+                if( currentCol == 0 )
+                    currentRow = (++currentRow) % rows;
+
+                // sets us to a new color if needed
+                if((currentRow == 0 && currentCol == 0 || this.rainbow || this.random)  && !sticky)
+                {
+                    // changes the color
+                    this.currentColor = (this.random) ? ((int)Math.floor((Math.random()) * COLOR_CHOICES.size())) :
+                            ((currentColor + 1) % COLOR_CHOICES.size());
+                }
+
+                // sleeps for however long speed is set to
+                try { sleep(this.speed); } catch(InterruptedException ie){/* do nothing we don't care */}
+            }
+        }
+    }
+
+    /**
      * Starts the listening for commands from the user to make the Bot do different actions.
      *
      * @param in A Scanner which is used to take commands from the user to make the bot do different actions.
@@ -203,7 +252,7 @@ public class FillBot extends BotApplication implements BotProtocol {
         while(this.go())
         {
             // prints out the prompt character
-            System.out.print(PROMPT);
+            System.out.print(this.username + PROMPT);
             // gets the next command (first full word)
             // sets it to lowercase just so any form can be understood (i.e. eXiT == exit)
             String command = in.next().toLowerCase().trim();
@@ -287,7 +336,7 @@ public class FillBot extends BotApplication implements BotProtocol {
             "  \t (note: color must be " + MIN_COLOR + "-" + MAX_COLOR + "; if none given, color is set to the currently selected.)\n" +
             "  cycle : fills the board with a single color then goes to the next.\n" +
             "  rainbow : change color to the next color for every tile placed.\n"+
-            "  random : change the color to a random color for every tile placed." +
+            "  random : change the color to a random color for every tile placed.\n" +
             "--------------------------------------------------------------------------------------------"
         );
     }
@@ -451,54 +500,6 @@ public class FillBot extends BotApplication implements BotProtocol {
         super.stop();
         // indicates to serverConn that it should close
         this.serverConn.close();
-    }
-
-    /**
-     * The run method is used to loop through the Fill action.
-     */
-    private void run()
-    {
-        // used to indicate the current row and column
-        int currentRow = 0;
-        int currentCol = 0;
-        // gets the highest row and column we can go to and subtracts
-        int rows = this.model.getDIM();
-        int cols = this.model.getDIM();
-
-        // keeps going until the go boolean is set to false
-        while(this.go())
-        {
-            // if we're paused, sleep for a second and then try again
-            if(this.paused())
-            {
-                try { sleep(1000); } catch(InterruptedException ie){/* do nothing just continue forward */}
-            }
-            // otherwise place the next tile
-            else
-            {
-                // send a tile
-                this.serverConn.sendTile(
-                        new PlaceTile(currentRow, currentCol, this.username,
-                                COLOR_CHOICES.get(this.currentColor), System.currentTimeMillis())
-                );
-                // adds one to row and mod by cols (this way it sets to 0 if needed)
-                currentCol = (++currentCol) % cols;
-
-                // if col was reset, add one to row and mod by total rows (this way it sets to 0 if needed)
-                if( currentCol == 0 )
-                    currentRow = (++currentRow) % rows;
-
-                // sets us to a new color if needed
-                if(currentRow == 0 && currentCol == 0  && !sticky)
-                {
-                    this.currentColor = (this.random) ? ((int)Math.round(((Math.random()+ 1) * COLOR_CHOICES.size() + 1))) :
-                                                        ((currentColor + 1) % COLOR_CHOICES.size());
-                }
-
-                // sleeps for however long speed is set to
-                try { sleep(this.speed); } catch(InterruptedException ie){/* do nothing we don't care */}
-            }
-        }
     }
 
     /**
