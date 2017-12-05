@@ -293,7 +293,6 @@ public class NetworkClient {
     private void error(String error)
     {
         logErr("Server responded with error message: \"" + error + "\"");
-        System.err.println("[Client]: Server responded with error message: \"" + error + "\"");
         this.stop();
     }
 

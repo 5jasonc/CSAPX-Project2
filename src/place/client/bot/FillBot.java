@@ -20,11 +20,6 @@ import static java.lang.Thread.sleep;
  */
 public class FillBot extends BotApplication implements BotProtocol {
 
-    /**
-     * The list of PlaceColor choices that the user can select from.
-     */
-    private static List<PlaceColor> COLOR_CHOICES;
-
     // A few custom commands that apply ONLY to this Bot
     /**
      * The STICKY command is called to make the color which the FillBot places stay constant.
@@ -215,7 +210,7 @@ public class FillBot extends BotApplication implements BotProtocol {
                 // send a tile
                 this.serverConn.sendTile(
                         new PlaceTile(currentRow, currentCol, this.username,
-                                COLOR_CHOICES.get(this.currentColor), System.currentTimeMillis())
+                                PlaceColor.values()[this.currentColor], System.currentTimeMillis())
                 );
                 // adds one to row and mod by cols (this way it sets to 0 if needed)
                 currentCol = (++currentCol) % cols;
@@ -228,8 +223,8 @@ public class FillBot extends BotApplication implements BotProtocol {
                 if((currentRow == 0 && currentCol == 0 || this.rainbow || this.random)  && !sticky)
                 {
                     // changes the color
-                    this.currentColor = (this.random) ? ((int)Math.floor((Math.random()) * COLOR_CHOICES.size())) :
-                            ((currentColor + 1) % COLOR_CHOICES.size());
+                    this.currentColor = (this.random) ? ((int)Math.floor((Math.random()) * PlaceColor.TOTAL_COLORS)) :
+                            ((currentColor + 1) % PlaceColor.TOTAL_COLORS);
                 }
 
                 // sleeps for however long speed is set to
@@ -516,9 +511,6 @@ public class FillBot extends BotApplication implements BotProtocol {
             System.err.println("$ java FillBot host port username");
             return;
         }
-
-        // creates a new List of color choices
-        COLOR_CHOICES = Arrays.asList(PlaceColor.values());
 
         try
         {
