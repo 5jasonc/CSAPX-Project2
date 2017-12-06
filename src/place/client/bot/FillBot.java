@@ -301,7 +301,7 @@ public class FillBot extends BotApplication implements BotProtocol {
                     random();
                     break;
                 default:
-                    badCommand(command);
+                    BotApplication.badCommand(this.serverConn, command);
             }
         }
     }
@@ -478,8 +478,7 @@ public class FillBot extends BotApplication implements BotProtocol {
      */
     private void badCommand(String command)
     {
-        // logs that a bad command was given
-        this.serverConn.log("\"" + command + "\" is not recognized as a command.");
+
     }
 
     /**
@@ -517,7 +516,6 @@ public class FillBot extends BotApplication implements BotProtocol {
         catch(Exception e)
         {
             System.err.println("We've hit an unrecoverable issue. Please try to launch again.");
-            System.err.println( e.getMessage() );
         }
     }
 }

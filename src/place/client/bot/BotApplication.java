@@ -153,7 +153,7 @@ public abstract class BotApplication {
             catch( Exception e )
             {
                 // print a stack trace if anything fatal occurs
-                e.printStackTrace();
+                e.getMessage();
             }
         }
     }
@@ -177,8 +177,16 @@ public abstract class BotApplication {
      */
     public abstract boolean go();
 
+
+    // STATIC METHODS ===========================
+    /**
+     * If the user inputs a bad command, they are alerted to this and the Bot keeps running.
+     *
+     * @param client The Bot's NetworkClient so that a proper log can be made.
+     * @param command The command that was passed in which was invalid.
+     */
     public static void badCommand(NetworkClient client, String command)
     {
-
+        client.log("\"" + command + "\" is not recognized as a command.");
     }
 }

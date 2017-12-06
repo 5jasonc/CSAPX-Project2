@@ -112,17 +112,17 @@ public class NetworkClient {
 
             // COMMUNICATION BUILDING SEQUENCE ================================
             // sets the in and out streams
-            this.in = new ObjectInputStream( serverConn.getInputStream() );
             this.out = new ObjectOutputStream( serverConn.getOutputStream() );
             // flushes out just in case
             out.flush();
+            this.in = new ObjectInputStream( serverConn.getInputStream() );
 
 
             // LOG IN SEQUENCE ================================
             // write our login request with our username
             out.writeUnshared(new PlaceRequest<>(PlaceRequest.RequestType.LOGIN, username));
             // wait for response from server to determine if we should continue starting or not
-            PlaceRequest<?> response = (PlaceRequest<?>) in.readObject();
+            PlaceRequest<?> response = (PlaceRequest<?>) in.readUnshared();
             // go through each case to determine what the response was
             // LOGIN_SUCCESS or ERROR (or unknown case)
             switch (response.getType())

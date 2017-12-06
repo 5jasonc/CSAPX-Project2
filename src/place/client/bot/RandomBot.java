@@ -440,7 +440,6 @@ public class RandomBot extends BotApplication implements BotProtocol {
         catch(Exception e)
         {
             System.err.println("We've hit an unrecoverable issue. Please try to launch again.");
-            System.err.println( e.getMessage() );
         }
     }
 }

@@ -1,8 +1,6 @@
 package place.client.gui;
 
 import javafx.application.Application;
-import javafx.beans.binding.Bindings;
-import javafx.beans.binding.NumberBinding;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
@@ -52,14 +50,24 @@ public class PlaceGUI extends Application implements Observer {
     private static final int LEFT_VBOX_SPACING = 3;
 
     /**
-     *
+     * The minimum size of the GridPane.
      */
-    private static final int MAX_RECT_SIZE = 900;
+    private static final int MIN_GRID_SIZE = 850;
 
     /**
      * The size of all the control items (color picker, selected color, tile info)
      */
-    private static final int SELECTOR_SIZE = 60;
+    private static final int TILE_PREVIEW_SIZE = 60;
+
+    /**
+     * The size of all the control items (color picker, selected color, tile info)
+     */
+    private static final int COLOR_CONTROL_SIZE = TILE_PREVIEW_SIZE/2;
+
+    /**
+     * The radius of the currently selected color preview circle.
+     */
+    private static final int SELECTED_COLOR_RADIUS = COLOR_CONTROL_SIZE;
 
     /**
      * The padding Insets for the color bar on the top.
@@ -197,7 +205,7 @@ public class PlaceGUI extends Application implements Observer {
         // add ourselves as an observer of the model
         this.model.addObserver(this);
 
-        this.rectSize = MAX_RECT_SIZE / this.model.getDIM();
+        this.rectSize = MIN_GRID_SIZE / this.model.getDIM();
     }
 
     /**
@@ -366,7 +374,7 @@ public class PlaceGUI extends Application implements Observer {
         for( PlaceColor color : PlaceColor.values())
         {
             // creates a new Rectangle Object with size RECT_SIZE/2, RECT_SIZE/2, and bg color according to color
-            Rectangle colorChoice = new Rectangle(SELECTOR_SIZE/2, SELECTOR_SIZE/2,
+            Rectangle colorChoice = new Rectangle(COLOR_CONTROL_SIZE, COLOR_CONTROL_SIZE,
                     Color.rgb(color.getRed(), color.getGreen(), color.getBlue()));
             // sets the border stroke to DARKGREY
             colorChoice.setStroke(Color.DARKGREY);
@@ -446,7 +454,7 @@ public class PlaceGUI extends Application implements Observer {
         PlaceColor selected = PlaceColor.values()[this.currentColor];
         this.selectedColorName = new Text(selected.name());
         this.selectedColorPreview = new Circle(
-                this.rectSize/2, Color.rgb(selected.getRed(), selected.getGreen(), selected.getBlue())
+                SELECTED_COLOR_RADIUS, Color.rgb(selected.getRed(), selected.getGreen(), selected.getBlue())
         );
 
         // stylizes our items
@@ -478,7 +486,7 @@ public class PlaceGUI extends Application implements Observer {
         // builds the tile preview
         Text tileInfoHeader = new Text("Tile info");
         this.tilePreview = new Rectangle(
-                this.rectSize, this.rectSize, Color.rgb(selected.getRed(), selected.getGreen(), selected.getBlue())
+                TILE_PREVIEW_SIZE, TILE_PREVIEW_SIZE, Color.rgb(selected.getRed(), selected.getGreen(), selected.getBlue())
         );
         this.tileLocationInfo = new Text("(0,0)");
         this.tileOwnerInfo = new Text("Owner");
@@ -614,7 +622,6 @@ public class PlaceGUI extends Application implements Observer {
         {
             // tells the user if we hit something totally unrecoverable
             System.err.println("We've hit an unrecoverable issue. Please try to launch again.");
-            System.err.println( e.getMessage() );
         }
     }
 }
