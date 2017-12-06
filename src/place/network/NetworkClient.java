@@ -216,6 +216,8 @@ public class NetworkClient {
             }
             catch(IOException | ClassNotFoundException e)
             {
+                disconnected();
+
                 // stop the client because we've hit an unrecoverable issue
                 this.stop();
             }
@@ -303,6 +305,11 @@ public class NetworkClient {
     {
         logErr("Bad response received from server. Terminating connection.");
         this.stop();
+    }
+
+    private void disconnected()
+    {
+        logErr("Lost connection to server.");
     }
 
     /**

@@ -16,6 +16,8 @@ import static java.lang.Thread.sleep;
 /**
  * A multithreaded Bot client that connects to a PlaceServer and performs actions that FILL the screen with color.
  *
+ * TODO: Put the command response methods as static methods in BotApplication
+ *
  * @author Kevin Becker (kjb2503)
  */
 public class FillBot extends BotApplication implements BotProtocol {
@@ -273,7 +275,7 @@ public class FillBot extends BotApplication implements BotProtocol {
                     else
                     {
                         try { speed(Integer.parseInt(tokens[0])); }
-                        catch(NumberFormatException e) { badCommand(command + " " + tokens[0]); }
+                        catch(NumberFormatException e) { invalidCommand(command + " " + tokens[0]); }
                     }
                     break;
                 case STICKY:
@@ -286,7 +288,7 @@ public class FillBot extends BotApplication implements BotProtocol {
                     else
                     {
                         try { sticky(Integer.parseInt(tokens[0])); }
-                        catch(NumberFormatException e) { badCommand(command + " " + tokens[0]); }
+                        catch(NumberFormatException e) { invalidCommand(command + " " + tokens[0]); }
                     }
                     break;
                 case CYCLE:
@@ -462,6 +464,11 @@ public class FillBot extends BotApplication implements BotProtocol {
         this.sticky = false;
         this.rainbow = false;
         this.random = true;
+    }
+
+    private void invalidCommand(String command)
+    {
+        this.serverConn.log("\"" + command + "\" is not a valid command.");
     }
 
     /**

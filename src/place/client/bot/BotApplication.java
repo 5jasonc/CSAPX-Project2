@@ -1,5 +1,7 @@
 package place.client.bot;
 
+import place.network.NetworkClient;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
@@ -174,4 +176,9 @@ public abstract class BotApplication {
      * @return true if this.go is set to true; false otherwise.
      */
     public abstract boolean go();
+
+    public static void badCommand(NetworkClient client, String command)
+    {
+
+    }
 }
