@@ -124,7 +124,7 @@ public class NetworkServer
         // alerts the user they sent a bad request as well as the type (if somehow we get here they are being naughty
         // and using a custom client.)
         // please don't be that person
-        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Bad request received: " + type + ". Terminating connection."));
+        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Bad request received: " + type + " Terminating connection."));
 
         // prints to the server log that user has sent a bad request
         logErr("Bad request received from " + username + ". REQUEST: " + type);
@@ -160,26 +160,27 @@ public class NetworkServer
      */
     public synchronized boolean tileChangeRequest(PlaceTile tile)
     {
-        if(isValid(tile))
+        // checks if a tile is invalid
+        if(!isValid(tile))
         {
-            // creates our changedTile request to send to all users
-            PlaceRequest<PlaceTile> changedTile = new PlaceRequest<>(PlaceRequest.RequestType.TILE_CHANGED, tile);
-            // loops through each user that is currently connected
-            for (ObjectOutputStream out : users.values()) {
-                try {
-                    // writes out our changed tile
-                    out.writeUnshared(changedTile);
-                    // sets the place in the board that was just changed
-                    this.board.setTile(tile);
-                } catch (IOException e) {
-                    // oops
-                }
-            }
-            // once we've gone through every user we van return true
-            return true;
+            // if we get here something is no good!
+            return false;
         }
-        // if we get here something is no good!
-        return false;
+        // creates our changedTile request to send to all users
+        PlaceRequest<PlaceTile> changedTile = new PlaceRequest<>(PlaceRequest.RequestType.TILE_CHANGED, tile);
+        // loops through each user that is currently connected
+        for (ObjectOutputStream out : users.values()) {
+            try {
+                // writes out our changed tile
+                out.writeUnshared(changedTile);
+                // sets the place in the board that was just changed
+                this.board.setTile(tile);
+            } catch (IOException e) {
+                // oops
+            }
+        }
+        // once we've gone through every user we van return true
+        return true;
     }
 
     /**

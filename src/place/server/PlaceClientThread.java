@@ -159,16 +159,23 @@ public class PlaceClientThread
                         // tries to make a tileChange request
                         // if the move requested is valid, and this client is not within its cool down time
                         // it gets sent and we initiate the cool down phase
-                        if(tileChangeRequest(tile) && !this.coolDown)
+                        if(!this.coolDown)
                         {
-                            // spawns the coolDown which cools down for 500ms (stops listening for that long)
-                            new Thread(this::coolDown).start();
+                            if (tileChangeRequest(tile))
+                            {
+                                // spawns the coolDown which cools down for 500ms (stops listening for that long)
+                                new Thread(this::coolDown).start();
+                            }
+                            else
+                            {
+                                logErr(this.username + " has requested to change a tile that doesn't exist.");
+                                logErr("Terminating connection for " + this.username);
+                                badRequest("Tile not valid.");
+                            }
                         }
                         else
                         {
-                            logErr(this.username + " has requested to change a tile that doesn't exist.");
-                            logErr("Terminating connection for " + this.username);
-                            badRequest("Tile not valid.");
+                            logErr(this.username + " sent a tile too soon. Ignoring it.");
                         }
                         break;
                     // we shouldn't ever receive these from the player... they are bad requests

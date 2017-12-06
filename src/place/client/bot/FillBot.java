@@ -87,6 +87,11 @@ public class FillBot extends BotApplication implements BotProtocol {
      */
     private boolean rainbow;
 
+    /**
+     * The boolean used to tell if we are in random mode or not.
+     *
+     * If the thread should be in random mode this is true; false otherwise.
+     */
     private boolean random;
 
     /**
