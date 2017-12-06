@@ -57,7 +57,7 @@ public class PlaceGUI extends Application implements Observer {
     /**
      * The size of all the control items (color picker, selected color, tile info)
      */
-    private static final int TILE_PREVIEW_SIZE = 60;
+    private static final int TILE_PREVIEW_SIZE = 70;
 
     /**
      * The size of all the control items (color picker, selected color, tile info)

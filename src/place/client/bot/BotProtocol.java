@@ -76,6 +76,11 @@ public interface BotProtocol {
     int MAX_COLOR = PlaceColor.TOTAL_COLORS - 1;
 
     /**
+     * The minimum color we can choose.
+     */
+    int MIN_COLOR = 0;
+
+    /**
      * The minimum number of milliseconds to wait between each place of a PlaceTile.
      */
     int MAX_SPEED = 3600;

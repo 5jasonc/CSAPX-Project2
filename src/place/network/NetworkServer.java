@@ -124,7 +124,7 @@ public class NetworkServer
         // alerts the user they sent a bad request as well as the type (if somehow we get here they are being naughty
         // and using a custom client.)
         // please don't be that person
-        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Bad request received: " + type + " Terminating connection."));
+        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Bad request received: " + type + ". Terminating connection."));
 
         // prints to the server log that user has sent a bad request
         logErr("Bad request received from " + username + ". REQUEST: " + type);

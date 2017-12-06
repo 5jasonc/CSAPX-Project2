@@ -2,11 +2,9 @@ package place.client.bot;
 
 import place.PlaceBoardObservable;
 import place.PlaceColor;
-import place.PlaceException;
 import place.PlaceTile;
 import place.network.NetworkClient;
 
-import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -16,13 +14,28 @@ import static java.lang.Thread.sleep;
  * A Place Bot which connects and randomly places tiles around the board.
  *
  * Note: running like 10 of these looks really cool in the GUI.
+ *
+ * @author Kevin Becker (kjb2503)
  */
 public class RandomBot extends BotApplication implements BotProtocol {
 
+    // a few custom items that apply ONLY to this Bot
+
     /**
-     * The minimum color we can choose (located at index 0)
+     * The manual that is printed at the start and when help is called.
      */
-    private static final int MIN_COLOR = 0;
+    private final static String RANDOM_MANUAL =
+            "----------------------------------------- Commands -----------------------------------------\n" +
+            "  help : display this information again.\n" +
+            "  quit : exits the bot cleanly.\n" +
+            "  pause : pauses the bot at its current tile.\n" +
+            "  resume : resumes the bots cycle at its current tile.\n"+
+            "  speed [number] : sets the time in milliseconds between each tile the bot places.\n"+
+            "  \t (note: number must be " + MIN_SPEED + "-" + MAX_SPEED + "; if none given, speed is set to 1000.)\n" +
+            "  sticky [color] : keeps the bot on a single color.\n" +
+            "  \t (note: color must be " + MIN_COLOR + "-" + MAX_COLOR + "; if none given, color is set to the currently selected.)\n" +
+            "  random : change the color to a random color for every tile placed.\n" +
+            "--------------------------------------------------------------------------------------------";
 
     //=============================================
 
@@ -41,7 +54,6 @@ public class RandomBot extends BotApplication implements BotProtocol {
      */
     private PlaceBoardObservable model;
 
-
     /**
      * Our currently selected color.
      */
@@ -53,7 +65,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
     private int speed = DEFAULT_SPEED;
 
     /**
-     *
+     * The sticky boolean that is used to tell if they bot is sticking on a single color.
      */
     private boolean sticky;
 
@@ -96,49 +108,17 @@ public class RandomBot extends BotApplication implements BotProtocol {
         return this.pause;
     }
 
-
-    /**
-     * Initializes the bot.
-     *
-     * @throws Exception if any exception is run into
-     */
-    @Override
-    public void init() throws Exception
-    {
-        // gets our arguments from BotApplication
-        List<String> arguments = super.getArguments();
-
-        // sets our required elements
-        String host = arguments.get(0);
-        int port = Integer.parseInt(arguments.get(1));
-        this.username = arguments.get(2);
-
-        // creates a new blank model
-        this.model = new PlaceBoardObservable();
-
-        try
-        {
-            // sets our network client, this is the last thing we do to minimize time between receiving the board and
-            // opening the Bot
-            this.serverConn = new NetworkClient(host, port, this.username, getClass().getSimpleName(), this.model);
-        }
-        catch(PlaceException e)
-        {
-            // closes serverConn
-            this.serverConn.close();
-            // runs our stop method so that we can deconstruct anything we've built thus far
-            // this.stop();
-            // tells the user about the issue we've run into
-            throw e;
-        }
-    }
-
     /**
      * Starts the Bot by connecting to the server, and starting the Bot filling thread.
      */
     @Override
-    public void start()
+    public void start( NetworkClient serverConn, String username, PlaceBoardObservable model )
     {
+        // sets the fields we were passed to start
+        this.serverConn = serverConn;
+        this.username = username;
+        this.model = model;
+
         // logs that the setup is complete
         this.serverConn.log("Setup complete. Bot is starting.");
 
@@ -203,25 +183,25 @@ public class RandomBot extends BotApplication implements BotProtocol {
     public void startCmdListening(Scanner in)
     {
         // prints out help before the first run so users know what commands there are
-        printHelp();
+        BotApplication.printHelp( RANDOM_MANUAL );
         // continues looping until we need to quit
         while(this.go())
         {
             // prints out the prompt character
-            System.out.print(this.username + PROMPT);
+            BotApplication.prompt(this.username + PROMPT);
             // gets the next command (first full word)
             // sets it to lowercase just so any form can be understood (i.e. eXiT == exit)
             String command = in.next().toLowerCase().trim();
 
             // gets the rest of the line and throws it into a tokens array (used for sticky)
-            String [] tokens = in.nextLine().trim().split(" ");
+            String [] tokens = in.nextLine().toLowerCase().trim().split(" ");
 
             // goes through each recognized command and performs the actions associated with them
             // if not recognized, a message is print saying so
             switch(command)
             {
                 case HELP:
-                    printHelp();
+                    BotApplication.printHelp( RANDOM_MANUAL );
                     break;
                 // quit or exit can be used (just in case)
                 case EXIT:
@@ -237,28 +217,28 @@ public class RandomBot extends BotApplication implements BotProtocol {
                     resume();
                     break;
                 case SPEED:
-                    // if we were given a speed we use it
+                    // if we weren't given a speed we use it
                     if(tokens[0].equals(""))
                         speed();
-                        // otherwise we use the default method
+                    // otherwise we use what we were given
                     else
-                    {
                         try { speed(Integer.parseInt(tokens[0])); }
-                        catch(NumberFormatException e) { badCommand(command + " " + tokens[0]); }
-                    }
+                        // if we catch a NFE it was an issue with the type of input, it's invalid
+                        catch (NumberFormatException e) { invalidCommand(command + " " + tokens[0]); }
+                        // if we catch a IOOB it was an issue with the NUMBER of inputs, its formatted improperly.
+                        catch (IndexOutOfBoundsException ioob) { badFormat(command); }
                     break;
                 case STICKY:
-                    // if we were given a color we use it
+                    // if we weren't given a color we use default
                     if(tokens[0].equals(""))
-                    {
                         sticky();
-                        // otherwise we use the default method
-                    }
+                    // otherwise we were given one method
                     else
-                    {
                         try { sticky(Integer.parseInt(tokens[0])); }
-                        catch(NumberFormatException e) { badCommand(command + " " + tokens[0]); }
-                    }
+                        // if we catch a NFE it was an issue with the type of input, it's invalid
+                        catch(NumberFormatException e) { invalidCommand(command + " " + tokens[0]); }
+                        // if we catch a IOOB it was an issue with the NUMBER of inputs, its formatted improperly.
+                        catch( IndexOutOfBoundsException ioob) { badFormat(command); }
                     break;
                 case RANDOM:
                     random();
@@ -267,26 +247,6 @@ public class RandomBot extends BotApplication implements BotProtocol {
                     badCommand(command);
             }
         }
-    }
-
-    /**
-     * Prints the help manual to the screen (so the user knows what commands do what)
-     */
-    private void printHelp()
-    {
-        System.out.println(
-                "----------------------------------------- Commands -----------------------------------------\n" +
-                        "  help : display this information again.\n" +
-                        "  quit : exits the bot cleanly.\n" +
-                        "  pause : pauses the bot at its current tile.\n" +
-                        "  resume : resumes the bots cycle at its current tile.\n"+
-                        "  speed [number] : sets the time in milliseconds between each tile the bot places.\n"+
-                        "  \t (note: number must be " + MIN_SPEED + "-" + MAX_SPEED + "; if none given, speed is set to 1000.)\n" +
-                        "  sticky [color] : keeps the bot on a single color.\n" +
-                        "  \t (note: color must be " + MIN_COLOR + "-" + MAX_COLOR + "; if none given, color is set to the currently selected.)\n" +
-                        "  random : change the color to a random color for every tile placed.\n" +
-                        "--------------------------------------------------------------------------------------------"
-        );
     }
 
     /**
@@ -341,10 +301,11 @@ public class RandomBot extends BotApplication implements BotProtocol {
         // makes sure its a valid speed
         if(speed < MIN_SPEED || speed > MAX_SPEED)
         {
-            badCommand("speed " + speed);
+            // tell the user
+            invalidCommand("speed " + speed);
             return;
         }
-        // tell the user we are now setting our speed
+        // logs we are changing speed
         this.serverConn.log("Setting the place speed to " + speed + "ms.");
         // sets our speed
         this.speed = speed;
@@ -367,6 +328,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
      */
     private void sticky()
     {
+        // runs sticky method with the current color
         sticky(this.currentColor);
     }
 
@@ -380,11 +342,12 @@ public class RandomBot extends BotApplication implements BotProtocol {
         // makes sure its a valid color
         if(color < MIN_COLOR || color >= MAX_COLOR)
         {
-            badCommand("sticky " + color);
+            // tell the user
+            invalidCommand("sticky " + color);
             return;
         }
 
-        // if we've made it here, we can log that we are making a change
+        // logs we are switching to sticky mode
         this.serverConn.log("Changing to sticky mode on " + PlaceColor.values()[color].name() + ".");
 
         // sets the current color
@@ -395,13 +358,35 @@ public class RandomBot extends BotApplication implements BotProtocol {
     }
 
     /**
+     * Logs if an invalid command has been placed.
+     *
+     * @param command The command that was passed which is invalid.
+     */
+    private void invalidCommand(String command)
+    {
+        // logs the invalid command
+        this.serverConn.log("\"" + command + "\" is not a valid command.");
+    }
+
+    /**
+     * Logs if an if a command is formatted properly.
+     *
+     * @param command The command type that was passed which was invalid.
+     */
+    private void badFormat(String command)
+    {
+        // logs the bad format
+        this.serverConn.log("\"" + command + "\" was formatted incorrectly. Try again.");
+    }
+
+    /**
      * If the user inputs a bad command, they are alerted to this and the Bot keeps running.
      *
      * @param command The command that was passed in which was invalid.
      */
     private void badCommand(String command)
     {
-        // logs that a bad command was given
+        // logs the bad command
         this.serverConn.log("\"" + command + "\" is not recognized as a valid command.");
     }
 

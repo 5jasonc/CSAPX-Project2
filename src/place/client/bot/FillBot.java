@@ -2,12 +2,10 @@ package place.client.bot;
 
 import place.PlaceBoardObservable;
 import place.PlaceColor;
-import place.PlaceException;
 import place.PlaceTile;
 import place.network.NetworkClient;
 
-
-import java.util.*;
+import java.util.Scanner;
 
 import static java.lang.Thread.sleep;
 
@@ -16,22 +14,33 @@ import static java.lang.Thread.sleep;
 /**
  * A multithreaded Bot client that connects to a PlaceServer and performs actions that FILL the screen with color.
  *
- * TODO: Put the command response methods as static methods in BotApplication
- *
  * @author Kevin Becker (kjb2503)
  */
 public class FillBot extends BotApplication implements BotProtocol {
 
-    // A few custom commands that apply ONLY to this Bot
+    // a few custom items that apply ONLY to this Bot
     /**
      * The CYCLE command is called to make the color which the FillBot places occur once it fills the entire screen.
      */
     private static final String CYCLE = "cycle";
 
     /**
-     * The minimum color we can choose (located at index 0)
+     * The manual that is printed at the start and when help is called.
      */
-    private static final int MIN_COLOR = 0;
+    private static final String FILL_MANUAL =
+        "----------------------------------------- Commands -----------------------------------------\n" +
+        "  help : display this information again.\n" +
+        "  quit : exits the bot cleanly.\n" +
+        "  pause : pauses the bot at its current tile.\n" +
+        "  resume : resumes the bots cycle at its current tile.\n"+
+        "  speed [number] : sets the time in milliseconds between each tile the bot places.\n"+
+        "  \t (note: number must be " + MIN_SPEED + "-" + MAX_SPEED + "; if none given, speed is set to 1000.)\n" +
+        "  sticky [color] : keeps the bot on a single color.\n" +
+        "  \t (note: color must be " + MIN_COLOR + "-" + MAX_COLOR + "; if none given, color is set to the currently selected.)\n" +
+        "  cycle : fills the board with a single color then goes to the next.\n" +
+        "  rainbow : change color to the next color for every tile placed.\n"+
+        "  random : change the color to a random color for every tile placed.\n" +
+        "--------------------------------------------------------------------------------------------";
 
     //=============================================
 
@@ -120,49 +129,17 @@ public class FillBot extends BotApplication implements BotProtocol {
         return this.pause;
     }
 
-
-    /**
-     * Initializes the bot.
-     *
-     * @throws Exception if any exception is run into
-     */
-    @Override
-    public void init() throws Exception
-    {
-        // gets our arguments from BotApplication
-        List<String> arguments = super.getArguments();
-
-        // sets our required elements
-        String host = arguments.get(0);
-        int port = Integer.parseInt(arguments.get(1));
-        this.username = arguments.get(2);
-
-        // creates a new blank model
-        this.model = new PlaceBoardObservable();
-
-        try
-        {
-            // sets our network client, this is the last thing we do to minimize time between receiving the board and
-            // opening the Bot
-            this.serverConn = new NetworkClient(host, port, this.username, getClass().getSimpleName(), this.model);
-        }
-        catch(PlaceException e)
-        {
-            // closes serverConn
-            this.serverConn.close();
-            // runs our stop method so that we can deconstruct anything we've built thus far
-            // this.stop();
-            // tells the user about the issue we've run into
-            throw e;
-        }
-    }
-
     /**
      * Starts the Bot by connecting to the server, and starting the Bot filling thread.
      */
     @Override
-    public void start()
+    public void start( NetworkClient serverConn, String username, PlaceBoardObservable model )
     {
+        // sets the fields we were passed to start
+        this.serverConn = serverConn;
+        this.username = username;
+        this.model = model;
+
         // logs that the setup is complete
         this.serverConn.log("Setup complete. Bot is starting.");
 
@@ -184,6 +161,7 @@ public class FillBot extends BotApplication implements BotProtocol {
         // used to indicate the current row and column
         int currentRow = 0;
         int currentCol = 0;
+
         // gets the highest row and column we can go to and subtracts
         int rows = this.model.getDIM();
         int cols = this.model.getDIM();
@@ -234,25 +212,25 @@ public class FillBot extends BotApplication implements BotProtocol {
     public void startCmdListening(Scanner in)
     {
         // prints out help before the first run so users know what commands there are
-        printHelp();
+        BotApplication.printHelp(FILL_MANUAL);
         // continues looping until we need to quit
         while(this.go())
         {
             // prints out the prompt character
-            System.out.print(this.username + PROMPT);
+            BotApplication.prompt(this.username + PROMPT);
             // gets the next command (first full word)
             // sets it to lowercase just so any form can be understood (i.e. eXiT == exit)
             String command = in.next().toLowerCase().trim();
 
             // gets the rest of the line and throws it into a tokens array (used for sticky)
-            String [] tokens = in.nextLine().trim().split(" ");
+            String [] tokens = in.nextLine().toLowerCase().trim().split(" ");
 
             // goes through each recognized command and performs the actions associated with them
             // if not recognized, a message is print saying so
             switch(command)
             {
                 case HELP:
-                    printHelp();
+                    BotApplication.printHelp(FILL_MANUAL);
                     break;
                 // quit or exit can be used (just in case)
                 case EXIT:
@@ -273,10 +251,11 @@ public class FillBot extends BotApplication implements BotProtocol {
                         speed();
                     // otherwise we use the default method
                     else
-                    {
                         try { speed(Integer.parseInt(tokens[0])); }
+                        // if we catch a NFE it was an issue with the type of input, it's invalid
                         catch(NumberFormatException e) { invalidCommand(command + " " + tokens[0]); }
-                    }
+                        // if we catch a IOOB it was an issue with the NUMBER of inputs, its formatted improperly.
+                        catch(IndexOutOfBoundsException ioob) { badFormat(command); }
                     break;
                 case STICKY:
                     // if we were given a color we use it
@@ -287,8 +266,12 @@ public class FillBot extends BotApplication implements BotProtocol {
                     }
                     else
                     {
+                        // tries to run sticky
                         try { sticky(Integer.parseInt(tokens[0])); }
+                        // if we catch a NFE it was an issue with the type of input, it's invalid
                         catch(NumberFormatException e) { invalidCommand(command + " " + tokens[0]); }
+                        // if we catch a IOOB it was an issue with the NUMBER of inputs, its formatted improperly.
+                        catch(IndexOutOfBoundsException ioob) { badFormat(command); }
                     }
                     break;
                 case CYCLE:
@@ -301,31 +284,9 @@ public class FillBot extends BotApplication implements BotProtocol {
                     random();
                     break;
                 default:
-                    BotApplication.badCommand(this.serverConn, command);
+                    badCommand(command);
             }
         }
-    }
-
-    /**
-     * Prints the help manual to the screen (so the user knows what commands do what)
-     */
-    private void printHelp()
-    {
-        System.out.println(
-            "----------------------------------------- Commands -----------------------------------------\n" +
-            "  help : display this information again.\n" +
-            "  quit : exits the bot cleanly.\n" +
-            "  pause : pauses the bot at its current tile.\n" +
-            "  resume : resumes the bots cycle at its current tile.\n"+
-            "  speed [number] : sets the time in milliseconds between each tile the bot places.\n"+
-            "  \t (note: number must be " + MIN_SPEED + "-" + MAX_SPEED + "; if none given, speed is set to 1000.)\n" +
-            "  sticky [color] : keeps the bot on a single color.\n" +
-            "  \t (note: color must be " + MIN_COLOR + "-" + MAX_COLOR + "; if none given, color is set to the currently selected.)\n" +
-            "  cycle : fills the board with a single color then goes to the next.\n" +
-            "  rainbow : change color to the next color for every tile placed.\n"+
-            "  random : change the color to a random color for every tile placed.\n" +
-            "--------------------------------------------------------------------------------------------"
-        );
     }
 
     /**
@@ -380,10 +341,11 @@ public class FillBot extends BotApplication implements BotProtocol {
         // makes sure its a valid speed
         if(speed < MIN_SPEED || speed > MAX_SPEED)
         {
-            badCommand("speed " + speed);
+            // if it isn't tell the user
+            invalidCommand(SPEED + " " + speed);
             return;
         }
-        // tell the user we are now setting our speed
+        // logs we are changing speeds
         this.serverConn.log("Setting the place speed to " + speed + "ms.");
         // sets our speed
         this.speed = speed;
@@ -408,11 +370,12 @@ public class FillBot extends BotApplication implements BotProtocol {
         // makes sure its a valid color
         if(color < MIN_COLOR || color >= MAX_COLOR)
         {
-            badCommand("sticky " + color);
+            // if it isn't tell the user
+            invalidCommand(STICKY + " " + color);
             return;
         }
 
-        // if we've made it here, we can log that we are making a change
+        // logs we are switching to sticky mode
         this.serverConn.log("Changing to sticky mode on " + PlaceColor.values()[color].name() + ".");
 
         // sets the current color
@@ -466,9 +429,26 @@ public class FillBot extends BotApplication implements BotProtocol {
         this.random = true;
     }
 
+    /**
+     * Logs if an invalid command has been placed.
+     *
+     * @param command The command that was passed which is invalid.
+     */
     private void invalidCommand(String command)
     {
+        // logs the invalid command
         this.serverConn.log("\"" + command + "\" is not a valid command.");
+    }
+
+    /**
+     * Logs if an if a command is formatted properly.
+     *
+     * @param command The command type that was passed which was invalid.
+     */
+    private void badFormat(String command)
+    {
+        // logs the bad format
+        this.serverConn.log("\"" + command + "\" was formatted incorrectly. Try again.");
     }
 
     /**
@@ -478,7 +458,8 @@ public class FillBot extends BotApplication implements BotProtocol {
      */
     private void badCommand(String command)
     {
-
+        // logs the bad command
+        this.serverConn.log("\"" + command + "\" is not recognized as a command.");
     }
 
     /**

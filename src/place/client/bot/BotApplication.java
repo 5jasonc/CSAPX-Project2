@@ -1,5 +1,8 @@
 package place.client.bot;
 
+import place.PlaceBoard;
+import place.PlaceBoardObservable;
+import place.PlaceException;
 import place.network.NetworkClient;
 
 import java.util.Arrays;
@@ -25,6 +28,26 @@ public abstract class BotApplication {
      * The event thread.
      */
     private Thread botThread;
+
+    /**
+     * The NetworkClient is housed within BotApplication
+     */
+    private NetworkClient serverConn;
+
+    /**
+     * The PlaceBoardObservable that is passed to the Bot upon startup
+     */
+    private PlaceBoardObservable model;
+
+    /**
+     * The Bot's username.
+     */
+    private String username;
+
+    /**
+     * The class name of the Bot that launched this iteration of the application.
+     */
+    private String className;
 
     /**
      * Run a bot application.
@@ -60,6 +83,10 @@ public abstract class BotApplication {
         {
             // tries to set up a new instance of the bot class
             BotApplication bot = botClass.newInstance();
+
+            // sets our className
+            bot.className = botClass.getSimpleName();
+
             // makes a copy of the arguments
             bot.arguments = Arrays.copyOf( args, args.length );
 
@@ -97,9 +124,40 @@ public abstract class BotApplication {
     }
 
     /**
-     * A do-nothing init method. It does nothing so that it can be overwritten by subclasses when necessary
+     * The init method is the same for all Bots. They require the same setup every time. Classes can override them, but
+     * they must run the super method first.
      */
-    public void init() throws Exception {}
+    public void init() throws Exception
+    {
+        // gets our arguments from BotApplication
+        List<String> arguments = getArguments();
+
+        // sets our required elements
+        String host = arguments.get(0);
+        int port = Integer.parseInt(arguments.get(1));
+
+        this.username = arguments.get(2);
+
+        // creates a new blank model
+        this.model = new PlaceBoardObservable();
+
+        // tries to setup the serverConn
+        try
+        {
+            // sets our network client, this is the last thing we do to minimize time between receiving the board and
+            // opening the Bot
+            this.serverConn = new NetworkClient(host, port, this.username, this.className, model);
+        }
+        catch(PlaceException e)
+        {
+            // closes serverConn
+            serverConn.close();
+            // runs our stop method so that we can deconstruct anything we've built thus far
+            // this.stop();
+            // tells the user about the issue we've run into
+            throw e;
+        }
+    }
 
     /**
      * Used to fetch the bot application's command line arguments. It simply returns a list that was passed in as
@@ -146,7 +204,7 @@ public abstract class BotApplication {
             // once this completes, the Bot has disconnected from the PlaceServer for some reason
             try ( Scanner in = new Scanner( System.in ) ) {
                 // starts the bot (indication that it is go time)
-                bot.start();
+                bot.start( bot.serverConn, bot.username, bot.model );
                 // starts the bot listening for commands
                 bot.startCmdListening(in);
             }
@@ -161,7 +219,7 @@ public abstract class BotApplication {
     /**
      * The method that begins the start procedure of the bot.
      */
-    public abstract void start() throws Exception;
+    public abstract void start( NetworkClient serverConn, String username, PlaceBoardObservable model ) throws Exception;
 
     /**
      * A do-nothing command listener that must be implemented by a user. At the base it must handle exiting.
@@ -178,15 +236,17 @@ public abstract class BotApplication {
     public abstract boolean go();
 
 
-    // STATIC METHODS ===========================
+    // STATIC METHOD ===========================
     /**
-     * If the user inputs a bad command, they are alerted to this and the Bot keeps running.
-     *
-     * @param client The Bot's NetworkClient so that a proper log can be made.
-     * @param command The command that was passed in which was invalid.
+     * Prints a help manual to the screen (so the user knows what commands do what)
      */
-    public static void badCommand(NetworkClient client, String command)
+    public static void printHelp(String manual)
     {
-        client.log("\"" + command + "\" is not recognized as a command.");
+        System.out.println(manual);
+    }
+
+    public static void prompt(String prompt)
+    {
+        System.out.print(prompt);
     }
 }
