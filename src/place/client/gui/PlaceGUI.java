@@ -1,6 +1,8 @@
 package place.client.gui;
 
 import javafx.application.Application;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.NumberBinding;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
@@ -50,9 +52,14 @@ public class PlaceGUI extends Application implements Observer {
     private static final int LEFT_VBOX_SPACING = 3;
 
     /**
-     * The size that each rectangle should be on screen. It is set to 70px for 70px.
+     *
      */
-    private static final int RECT_SIZE = 60;
+    private static final int MAX_RECT_SIZE = 900;
+
+    /**
+     * The size of all the control items (color picker, selected color, tile info)
+     */
+    private static final int SELECTOR_SIZE = 60;
 
     /**
      * The padding Insets for the color bar on the top.
@@ -68,6 +75,11 @@ public class PlaceGUI extends Application implements Observer {
      * The padding Insets for the main grid.
      */
     private static final Insets MAIN_GRID_INSETS = new Insets(0, 10, 10, 15);
+
+    /**
+     * The green color used by the connection status indicator.
+     */
+    private static final Color GREEN = Color.web("#4dcc6d");
 
     //===========================================
 
@@ -101,6 +113,11 @@ public class PlaceGUI extends Application implements Observer {
      */
     private int currentColor = 0;
 
+    /**
+     * The size that each rectangle should be on screen. It is set to 70px for 70px.
+     */
+    private int rectSize;
+
     // SELECTED COLOR =============================
     /**
      * The text that is used to show the name of the currently selected color in the VBox.
@@ -111,13 +128,6 @@ public class PlaceGUI extends Application implements Observer {
      * A Rectangle which has a preview of the currently selected color.
      */
     private Circle selectedColorPreview;
-
-    // CONNECTION STATUS ==========================
-
-    /**
-     * A Text object which has the current connection status.
-     */
-    private Text connectionStatus;
 
     // TILE PREVIEW ===============================
     /**
@@ -186,6 +196,8 @@ public class PlaceGUI extends Application implements Observer {
         }
         // add ourselves as an observer of the model
         this.model.addObserver(this);
+
+        this.rectSize = MAX_RECT_SIZE / this.model.getDIM();
     }
 
     /**
@@ -205,6 +217,7 @@ public class PlaceGUI extends Application implements Observer {
         // sets our mainGrid in place
         root.setCenter( this.mainGrid = buildMainGrid() );
 
+        // sets the left VBox which houses the selected color, status, and
         root.setLeft( buildLeftVBox() );
 
         /*
@@ -247,7 +260,7 @@ public class PlaceGUI extends Application implements Observer {
         GridPane mainGrid = new GridPane();
 
         // sets the padding of the main GridPane so there is a border to it (makes it look nice)
-        mainGrid.setPadding( MAIN_GRID_INSETS );
+        mainGrid.setPadding(MAIN_GRID_INSETS);
 
         // sets the background color to black so we have a nice faux border around us
         mainGrid.setStyle("-fx-background-color:#000;");
@@ -289,7 +302,7 @@ public class PlaceGUI extends Application implements Observer {
         PlaceColor tileColor = tile.getColor();
 
         // generates our tile as a rectangle
-        Rectangle tileRectangle = new Rectangle(RECT_SIZE, RECT_SIZE,
+        Rectangle tileRectangle = new Rectangle(this.rectSize, this.rectSize,
                 Color.rgb(tileColor.getRed(), tileColor.getGreen(), tileColor.getBlue()));
 
 
@@ -341,7 +354,7 @@ public class PlaceGUI extends Application implements Observer {
         FlowPane colorBar = new FlowPane(BOTTOM_GAPS, BOTTOM_GAPS);
 
         // sets the padding to be 10, 5, 10, 5
-        colorBar.setPadding( COLOR_BAR_INSETS );
+        colorBar.setPadding(COLOR_BAR_INSETS);
 
         // sets the background of the FlowPane to black (to match the rest of the UI bg)
         colorBar.setStyle("-fx-background-color: #000;");
@@ -353,7 +366,7 @@ public class PlaceGUI extends Application implements Observer {
         for( PlaceColor color : PlaceColor.values())
         {
             // creates a new Rectangle Object with size RECT_SIZE/2, RECT_SIZE/2, and bg color according to color
-            Rectangle colorChoice = new Rectangle(RECT_SIZE/2, RECT_SIZE/2,
+            Rectangle colorChoice = new Rectangle(SELECTOR_SIZE/2, SELECTOR_SIZE/2,
                     Color.rgb(color.getRed(), color.getGreen(), color.getBlue()));
             // sets the border stroke to DARKGREY
             colorChoice.setStroke(Color.DARKGREY);
@@ -433,7 +446,7 @@ public class PlaceGUI extends Application implements Observer {
         PlaceColor selected = PlaceColor.values()[this.currentColor];
         this.selectedColorName = new Text(selected.name());
         this.selectedColorPreview = new Circle(
-                RECT_SIZE/2, Color.rgb(selected.getRed(), selected.getGreen(), selected.getBlue())
+                this.rectSize/2, Color.rgb(selected.getRed(), selected.getGreen(), selected.getBlue())
         );
 
         // stylizes our items
@@ -450,11 +463,11 @@ public class PlaceGUI extends Application implements Observer {
         // CONNECTION STATUS =========================
         // builds our connection status indicator
         Text connectionStatusHeader = new Text("Status");
-        this.connectionStatus = new Text("Connected");
+        Text connectionStatus = new Text("Connected");
 
         // stylizes our items
         connectionStatusHeader.setFill(Color.WHITE);
-        this.connectionStatus.setFill(Color.web("#4dcc6d"));
+        connectionStatus.setFill(GREEN);
 
         // SPACER 2 ==========================
         // builds a new spacer and sets its priority to always
@@ -465,7 +478,7 @@ public class PlaceGUI extends Application implements Observer {
         // builds the tile preview
         Text tileInfoHeader = new Text("Tile info");
         this.tilePreview = new Rectangle(
-                RECT_SIZE, RECT_SIZE, Color.rgb(selected.getRed(), selected.getGreen(), selected.getBlue())
+                this.rectSize, this.rectSize, Color.rgb(selected.getRed(), selected.getGreen(), selected.getBlue())
         );
         this.tileLocationInfo = new Text("(0,0)");
         this.tileOwnerInfo = new Text("Owner");
@@ -488,7 +501,7 @@ public class PlaceGUI extends Application implements Observer {
                 this.selectedColorName,
                 spacer1,
                 connectionStatusHeader,
-                this.connectionStatus,
+                connectionStatus,
                 spacer2,
                 tileInfoHeader,
                 this.tilePreview,
@@ -511,17 +524,19 @@ public class PlaceGUI extends Application implements Observer {
     public void update(Observable o, Object tile)
     {
         // makes sure our Observable is the one we want (if it's not then we are screwed)
-        assert o == this.model : "We got updated from the wrong spot.";
+        assert o == this.model : "We got updated from the wrong Observable.";
 
         // checks to make sure our tile object is actually a tile (if it's not we redraw the entire board)
         // this is a HUGE time saver so we don't need to re-draw our board every time, just replace a tile.
         if(tile instanceof PlaceTile)
+        {
             // if we're all set to do tile-update actions, we perform them now
-            this.changeTile( (PlaceTile) tile);
+            changeTile((PlaceTile) tile);
+        }
         else
         {
             // in the VERY unlikely event we're sent something weird from PlaceBoardObservable, we redraw the entire board.
-            this.serverConn.logErr("Hmmm... Our board has sent us something and we don't know what it is.\n" +
+            this.serverConn.logErr("Hmmm... Our board has sent us something unusual.\n" +
                     "We will now recreate our board to make sure everything is correct. It should only take a second");
             redrawGrid();
         }
@@ -537,7 +552,9 @@ public class PlaceGUI extends Application implements Observer {
         // CHANGING THE TILE ON SCREEN ===========================
         // using runLater to join this method with the JavaFX thread
         // set our tile in its correct place
-        javafx.application.Platform.runLater( () -> mainGrid.add(buildSingleTile(tile), tile.getCol(), tile.getRow()) );
+        javafx.application.Platform.runLater(
+                () -> mainGrid.add(buildSingleTile(tile), tile.getCol(), tile.getRow())
+        );
     }
 
     /**
