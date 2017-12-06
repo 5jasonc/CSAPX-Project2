@@ -54,6 +54,23 @@ public interface BotProtocol {
     String SPEED = "speed";
 
     /**
+     * The boolean used to tell if we should stick with the same color or not.
+     *
+     * If the thread should be in sticky mode, this is true; false otherwise.
+     */
+    String STICKY = "sticky";
+
+    /**
+     * The RAINBOW command is called to make the color which the Bot places change every tile to the next color.
+     */
+    String RAINBOW = "rainbow";
+
+    /**
+     * The RANDOM command is called to make the color which the Bot places random
+     */
+    String RANDOM = "random";
+
+    /**
      * The maximum color we can choose (located at index TOTAL_COLORS - 1)
      */
     int MAX_COLOR = PlaceColor.TOTAL_COLORS - 1;
@@ -72,4 +89,9 @@ public interface BotProtocol {
      * The maximum number of milliseconds to wait between each place of a PlaceTile.
      */
     int MIN_SPEED = 600;
+
+    /**
+     * When the Bot is in pause mode, it must sleep for this many milliseconds and then check again.
+     */
+    int PAUSED_CHECK = 1000;
 }

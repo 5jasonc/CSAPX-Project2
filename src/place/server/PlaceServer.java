@@ -8,28 +8,33 @@ import place.PlaceException;
 import place.network.NetworkServer;
 
 /**
+ * A PlaceServer is a location that PlaceClients can connect and create cool tile drawings.
  *
+ * This class implements closeable so its "close()" method is called automatically upon exit.
  */
 public class PlaceServer implements Closeable {
 
     /**
-     *
+     * The ServerSocket which is used to connect to clients.
      */
     private ServerSocket server;
 
     /**
-     *
+     * The NetworkServer which is the brains of the communication operation.
      */
     private NetworkServer networkServer;
 
     /**
-     *
+     * The boolean which tells the listener thread if it should keep listening.
      */
     private boolean go;
 
     /**
+     * This is used by the thread to make sure it should keep going.
      *
-     * @return
+     * Synchronized so that we only allow running it one thread at a time.
+     *
+     * @return true if this.go is set to true; false otherwise.
      */
     private synchronized boolean go()
     {
@@ -62,8 +67,7 @@ public class PlaceServer implements Closeable {
         }
         this.go = true;
         // say this to output once we've set everything up.
-        System.out.println("[Server]: Server initialization complete. Now accepting connections. Listening on: " +
-                server.getInetAddress().getHostAddress() + ":" + server.getLocalPort());
+        this.networkServer.log("Server has started successfully. Accepting connections on port " + port + ".");
     }
 
     /**

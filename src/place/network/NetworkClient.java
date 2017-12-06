@@ -257,7 +257,7 @@ public class NetworkClient {
     /**
      * A small sleeper thread class which makes it so a user cannot send any PlaceTile for 500ms. (A cool-down)
      */
-    private synchronized void coolDown()
+    private void coolDown()
     {
         // sleeps
         this.coolDown = true;

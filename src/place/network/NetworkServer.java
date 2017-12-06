@@ -18,7 +18,7 @@ import java.util.Map;
  */
 public class NetworkServer
 {
-    private static final String logHeader = "[Server]: ";
+    private static final String LOG_HEADER = "[PlaceServer]: ";
 
     /**
      * The Map that contains all of the currently connected users.
@@ -163,7 +163,7 @@ public class NetworkServer
         // checks if a tile is invalid
         if(!isValid(tile))
         {
-            // if we get here something is no good!
+            // if we get here something is no good! (aka tile invalid, must disconnect)
             return false;
         }
         // creates our changedTile request to send to all users
@@ -202,7 +202,7 @@ public class NetworkServer
      */
     public void log(String msg)
     {
-        System.out.println(logHeader + msg);
+        System.out.println(LOG_HEADER + msg);
     }
 
     /**
@@ -212,7 +212,7 @@ public class NetworkServer
      */
     public void logErr(String msg)
     {
-        System.err.println(logHeader + msg);
+        System.err.println(LOG_HEADER + msg);
     }
 
     /**

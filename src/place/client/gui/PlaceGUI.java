@@ -112,6 +112,13 @@ public class PlaceGUI extends Application implements Observer {
      */
     private Circle selectedColorPreview;
 
+    // CONNECTION STATUS ==========================
+
+    /**
+     * A Text object which has the current connection status.
+     */
+    private Text connectionStatus;
+
     // TILE PREVIEW ===============================
     /**
      * The preview circle that is the color of the PlaceTile that the mouse is currently hovering over.
@@ -437,8 +444,22 @@ public class PlaceGUI extends Application implements Observer {
 
         // SPACER ============================
         // builds a new spacer and sets its priority to always
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
+        Region spacer1 = new Region();
+        VBox.setVgrow(spacer1, Priority.ALWAYS);
+
+        // CONNECTION STATUS =========================
+        // builds our connection status indicator
+        Text connectionStatusHeader = new Text("Status");
+        this.connectionStatus = new Text("Connected");
+
+        // stylizes our items
+        connectionStatusHeader.setFill(Color.WHITE);
+        this.connectionStatus.setFill(Color.web("#4dcc6d"));
+
+        // SPACER 2 ==========================
+        // builds a new spacer and sets its priority to always
+        Region spacer2 = new Region();
+        VBox.setVgrow(spacer2, Priority.ALWAYS);
 
         // TILE INFO ============================
         // builds the tile preview
@@ -462,8 +483,19 @@ public class PlaceGUI extends Application implements Observer {
 
         // ADDING TO VBOX ==============================
         leftVBox.getChildren().addAll(
-                selectedColorPre, this.selectedColorPreview, this.selectedColorName, spacer, tileInfoHeader, this.tilePreview,
-                this.tileLocationInfo, this.tileOwnerInfo, this.tileCreateDateInfo, this.tileCreateTimeInfo
+                selectedColorPre,
+                this.selectedColorPreview,
+                this.selectedColorName,
+                spacer1,
+                connectionStatusHeader,
+                this.connectionStatus,
+                spacer2,
+                tileInfoHeader,
+                this.tilePreview,
+                this.tileLocationInfo,
+                this.tileOwnerInfo,
+                this.tileCreateDateInfo,
+                this.tileCreateTimeInfo
         );
 
         // return the preview VBox

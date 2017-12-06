@@ -6,25 +6,18 @@ import place.PlaceException;
 import place.PlaceTile;
 import place.network.NetworkClient;
 
-
-import java.util.*;
+import java.util.List;
+import java.util.Random;
+import java.util.Scanner;
 
 import static java.lang.Thread.sleep;
 
-// fully commented
-
 /**
- * A multithreaded Bot client that connects to a PlaceServer and performs actions that FILL the screen with color.
+ * A Place Bot which connects and randomly places tiles around the board.
  *
- * @author Kevin Becker (kjb2503)
+ * Note: running like 10 of these looks really cool in the GUI.
  */
-public class FillBot extends BotApplication implements BotProtocol {
-
-    // A few custom commands that apply ONLY to this Bot
-    /**
-     * The CYCLE command is called to make the color which the FillBot places occur once it fills the entire screen.
-     */
-    private static final String CYCLE = "cycle";
+public class RandomBot extends BotApplication implements BotProtocol {
 
     /**
      * The minimum color we can choose (located at index 0)
@@ -48,10 +41,11 @@ public class FillBot extends BotApplication implements BotProtocol {
      */
     private PlaceBoardObservable model;
 
+
     /**
-     * The currently selected PlaceColor that will be used to send to the server to make a move.
+     * Our currently selected color.
      */
-    private int currentColor = 0;
+    private int currentColor;
 
     /**
      * The number of milliseconds between the sending of each PlaceTile.
@@ -59,25 +53,9 @@ public class FillBot extends BotApplication implements BotProtocol {
     private int speed = DEFAULT_SPEED;
 
     /**
-     * The boolean used to tell if we should stick with the same color or not.
      *
-     * If the thread should be in sticky mode, this is true; false otherwise.
      */
     private boolean sticky;
-
-    /**
-     * The boolean used to tell if we are in rainbow mode or not.
-     *
-     * If the thread should be in rainbow mode this is true; false otherwise.
-     */
-    private boolean rainbow;
-
-    /**
-     * The boolean used to tell if we are in random mode or not.
-     *
-     * If the thread should be in random mode this is true; false otherwise.
-     */
-    private boolean random;
 
     /**
      * The indicator to the thread whether it should keep running or not.
@@ -179,9 +157,8 @@ public class FillBot extends BotApplication implements BotProtocol {
      */
     private void run()
     {
-        // used to indicate the current row and column
-        int currentRow = 0;
-        int currentCol = 0;
+        // creates a new random number generator
+        Random rand = new Random();
         // gets the highest row and column we can go to and subtracts
         int rows = this.model.getDIM();
         int cols = this.model.getDIM();
@@ -192,30 +169,24 @@ public class FillBot extends BotApplication implements BotProtocol {
             // if we're paused, sleep for a second and then try again
             if(this.paused())
             {
-                try { sleep(1000); } catch(InterruptedException ie){/* do nothing just continue forward */}
+                try { sleep(PAUSED_CHECK); } catch(InterruptedException ie){/* do nothing just continue forward */}
             }
             // otherwise place the next tile
             else
             {
-                // send a tile
+                // gets a random row and col
+                int row = rand.nextInt(rows);
+                int col = rand.nextInt(cols);
+
+                // gets a random color if we're not sticky
+                if(!sticky)
+                    this.currentColor = rand.nextInt(PlaceColor.TOTAL_COLORS);
+
+                // send a tile at that location
                 this.serverConn.sendTile(
-                        new PlaceTile(currentRow, currentCol, this.username,
+                        new PlaceTile(row, col, this.username,
                                 PlaceColor.values()[this.currentColor], System.currentTimeMillis())
                 );
-                // adds one to row and mod by cols (this way it sets to 0 if needed)
-                currentCol = (++currentCol) % cols;
-
-                // if col was reset, add one to row and mod by total rows (this way it sets to 0 if needed)
-                if( currentCol == 0 )
-                    currentRow = (++currentRow) % rows;
-
-                // sets us to a new color if needed
-                if((currentRow == 0 && currentCol == 0 || this.rainbow || this.random)  && !sticky)
-                {
-                    // changes the color
-                    this.currentColor = (this.random) ? ((int)Math.floor((Math.random()) * PlaceColor.TOTAL_COLORS)) :
-                            ((currentColor + 1) % PlaceColor.TOTAL_COLORS);
-                }
 
                 // sleeps for however long speed is set to
                 try { sleep(this.speed); } catch(InterruptedException ie){/* do nothing we don't care */}
@@ -269,7 +240,7 @@ public class FillBot extends BotApplication implements BotProtocol {
                     // if we were given a speed we use it
                     if(tokens[0].equals(""))
                         speed();
-                    // otherwise we use the default method
+                        // otherwise we use the default method
                     else
                     {
                         try { speed(Integer.parseInt(tokens[0])); }
@@ -289,12 +260,6 @@ public class FillBot extends BotApplication implements BotProtocol {
                         catch(NumberFormatException e) { badCommand(command + " " + tokens[0]); }
                     }
                     break;
-                case CYCLE:
-                    cycle();
-                    break;
-                case RAINBOW:
-                    rainbow();
-                    break;
                 case RANDOM:
                     random();
                     break;
@@ -310,19 +275,17 @@ public class FillBot extends BotApplication implements BotProtocol {
     private void printHelp()
     {
         System.out.println(
-            "----------------------------------------- Commands -----------------------------------------\n" +
-            "  help : display this information again.\n" +
-            "  quit : exits the bot cleanly.\n" +
-            "  pause : pauses the bot at its current tile.\n" +
-            "  resume : resumes the bots cycle at its current tile.\n"+
-            "  speed [number] : sets the time in milliseconds between each tile the bot places.\n"+
-            "  \t (note: number must be " + MIN_SPEED + "-" + MAX_SPEED + "; if none given, speed is set to 1000.)\n" +
-            "  sticky [color] : keeps the bot on a single color.\n" +
-            "  \t (note: color must be " + MIN_COLOR + "-" + MAX_COLOR + "; if none given, color is set to the currently selected.)\n" +
-            "  cycle : fills the board with a single color then goes to the next.\n" +
-            "  rainbow : change color to the next color for every tile placed.\n"+
-            "  random : change the color to a random color for every tile placed.\n" +
-            "--------------------------------------------------------------------------------------------"
+                "----------------------------------------- Commands -----------------------------------------\n" +
+                        "  help : display this information again.\n" +
+                        "  quit : exits the bot cleanly.\n" +
+                        "  pause : pauses the bot at its current tile.\n" +
+                        "  resume : resumes the bots cycle at its current tile.\n"+
+                        "  speed [number] : sets the time in milliseconds between each tile the bot places.\n"+
+                        "  \t (note: number must be " + MIN_SPEED + "-" + MAX_SPEED + "; if none given, speed is set to 1000.)\n" +
+                        "  sticky [color] : keeps the bot on a single color.\n" +
+                        "  \t (note: color must be " + MIN_COLOR + "-" + MAX_COLOR + "; if none given, color is set to the currently selected.)\n" +
+                        "  random : change the color to a random color for every tile placed.\n" +
+                        "--------------------------------------------------------------------------------------------"
         );
     }
 
@@ -388,11 +351,22 @@ public class FillBot extends BotApplication implements BotProtocol {
     }
 
     /**
+     * Sets the mode of the Bot to be random mode. (This is default action of the bot.)
+     */
+    private void random()
+    {
+        // logs we are switching to random mode
+        this.serverConn.log("Changing to random color mode.");
+
+        // sets us in random mode
+        this.sticky = false;
+    }
+
+    /**
      * Sets the mode of the Bot to sticky on the current color.
      */
     private void sticky()
     {
-        // calls the sticky method with the current color
         sticky(this.currentColor);
     }
 
@@ -418,50 +392,6 @@ public class FillBot extends BotApplication implements BotProtocol {
 
         // sets us in sticky mode
         this.sticky = true;
-        this.rainbow = false;
-        this.random = false;
-    }
-
-    /**
-     * Sets the mode of the Bot to be cycle mode.
-     */
-    private void cycle()
-    {
-        // logs we are gong to cycle mode
-        this.serverConn.log("Changing to cycle color mode.");
-
-        // sets us in cycle mode
-        this.sticky = false;
-        this.rainbow = false;
-        this.random = false;
-    }
-
-    /**
-     * Sets the mode of the Bot to be rainbow color mode.
-     */
-    private void rainbow()
-    {
-        // logs that we are changing modes
-        this.serverConn.log("Get ready to see color!");
-
-        // sets us in rainbow mode
-        this.sticky = false;
-        this.rainbow = true;
-        this.random = false;
-    }
-
-    /**
-     * Sets the mode of the Bot to be random color mode.
-     */
-    private void random()
-    {
-        // logs we are switching to random mode
-        this.serverConn.log("Changing to random color mode.");
-
-        // sets us in random mode
-        this.sticky = false;
-        this.rainbow = false;
-        this.random = true;
     }
 
     /**
@@ -472,7 +402,7 @@ public class FillBot extends BotApplication implements BotProtocol {
     private void badCommand(String command)
     {
         // logs that a bad command was given
-        this.serverConn.log("\"" + command + "\" is not recognized as a command.");
+        this.serverConn.log("\"" + command + "\" is not recognized as a valid command.");
     }
 
     /**
@@ -498,14 +428,14 @@ public class FillBot extends BotApplication implements BotProtocol {
         if(args.length != 3)
         {
             System.err.println("Please run the bot as: ");
-            System.err.println("$ java FillBot host port username");
+            System.err.println("$ java RandomBot host port username");
             return;
         }
 
         try
         {
             // launch the application
-            BotApplication.launch(FillBot.class, args);
+            BotApplication.launch(RandomBot.class, args);
         }
         catch(Exception e)
         {
