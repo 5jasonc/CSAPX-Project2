@@ -79,7 +79,8 @@ public class PlacePTUI extends ConsoleApplication implements Observer
         this.go = true;
 
         // Creates new thread to run user operations
-        new Thread( () -> this.run( in )).start();
+        //new Thread(() -> this.run(in)).start();
+        run(in);
     }
 
     /**
@@ -97,7 +98,6 @@ public class PlacePTUI extends ConsoleApplication implements Observer
             else {
                 // Otherwise check for player input of where to place move
                 int placeRow = Integer.parseInt(playerInput[0]);
-
                 int placeCol = Integer.parseInt(playerInput[1]);
                 int color = Integer.parseInt(playerInput[2]);
 
@@ -114,11 +114,11 @@ public class PlacePTUI extends ConsoleApplication implements Observer
                         this.serverConn.sendTile(newTile);
                     }
                     else {
-                        this.serverConn.logErr("Please select a valid tile on the board.");
+                        this.serverConn.logErr("Please enter a valid tile on the board.");
                     }
                 }
                 else {
-                    this.serverConn.logErr("Please select a color value between 0-15.");
+                    this.serverConn.logErr("Please enter a color value between 0-15.");
                 }
             }
         }

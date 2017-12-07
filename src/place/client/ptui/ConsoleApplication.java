@@ -103,11 +103,7 @@ public abstract class ConsoleApplication {
 
     /**
      * The method that is expected to run the main loop of the console
-     * application, prompting the user for text input and displaying
-     * text output. It is named differently than
-     * {@link javafx.application.Application#start(javafx.stage.Stage)}
-     * to emphasize that this method can keep executing (looping,
-     * probably) as long as the application is running.
+     * application, prompting the user for text input.
      */
     public abstract void go( Scanner in ) throws Exception;
 
