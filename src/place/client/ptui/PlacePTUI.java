@@ -2,11 +2,9 @@ package place.client.ptui;
 
 import place.PlaceBoardObservable;
 import place.PlaceColor;
-import place.PlaceException;
 import place.PlaceTile;
 import place.network.NetworkClient;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -78,8 +76,7 @@ public class PlacePTUI extends ConsoleApplication implements Observer
 
         this.go = true;
 
-        // Creates new thread to run user operations
-        //new Thread(() -> this.run(in)).start();
+        // Starts our run function
         run(in);
     }
 
@@ -97,7 +94,7 @@ public class PlacePTUI extends ConsoleApplication implements Observer
             if(playerInput[0].equals("-1") && playerInput.length == 1) {
                 this.go = false;
             }
-            else if(playerInput.length != 3) {
+            else if(playerInput.length != 3) {  //Checks for invalid input
                 this.serverConn.logErr("Please enter a valid command.");
             }
             else {
