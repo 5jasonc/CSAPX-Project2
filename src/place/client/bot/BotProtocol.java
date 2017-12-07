@@ -6,10 +6,30 @@ import place.PlaceColor;
  * The protocol that a Bot must utilize.
  */
 public interface BotProtocol {
+
+    // MESSAGES =============================
+
     /**
      * The PROMPT String that is posted every time a user should provide input.
      */
     String PROMPT = ">>> ";
+
+    //TODO: comment
+    String SETUP_COMPLETE_MSG = "Setup is complete. Bot will now start.";
+
+    String EXIT_MSG = "Exiting the Bot.";
+
+    String PAUSE_MSG = "Pausing the fill. To resume, use \"resume\".";
+
+    String RESUME_MSG = "Resuming the bot.";
+
+    String INVALID_MSG = "is not a valid command.";
+
+    String FORMAT_MSG = "was formatted incorrectly. Try again.";
+
+    String BAD_CMD_MSG = "is not recognized as a command.";
+
+    // COMMANDS ===================================
 
     /**
      * The HELP command is used to print the command help manual.
@@ -75,6 +95,8 @@ public interface BotProtocol {
      */
     String RANDOM = "random";
 
+    // COLOR NUMBERS ====================================
+
     /**
      * The maximum color we can choose (located at index TOTAL_COLORS - 1)
      */
@@ -84,6 +106,8 @@ public interface BotProtocol {
      * The minimum color we can choose.
      */
     int MIN_COLOR = 0;
+
+    // SPEED NUMBERS =====================================
 
     /**
      * The minimum number of milliseconds to wait between each place of a PlaceTile.
@@ -99,6 +123,8 @@ public interface BotProtocol {
      * The maximum number of milliseconds to wait between each place of a PlaceTile.
      */
     int MIN_SPEED = 600;
+
+    // PAUSE CHECKING ====================================
 
     /**
      * When the Bot is in pause mode, it must sleep for this many milliseconds and then check again.

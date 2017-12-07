@@ -552,7 +552,7 @@ public class PlaceGUI extends Application implements Observer {
         // builds the tile preview
         Text tileInfoHeader = new Text("Tile info (?)");
         // creates a tooltip about the most recent header
-        Tooltip tileInfoAbout = new Tooltip("Tile info displays information about the Place tile your mouse is over.");
+        Tooltip tileInfoAbout = new Tooltip("Tile info displays information about the tile your mouse is over.");
         // installs the tooltip
         Tooltip.install(tileInfoHeader, tileInfoAbout);
 

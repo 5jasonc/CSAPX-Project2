@@ -48,6 +48,11 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
     private final static String COL = "col";
 
     /**
+     * This is used when we need to force a protect. It is used to "trick" the protectTile() method into protecting a tile.
+     */
+    private final static String NO_OWNER = "";
+
+    /**
      * The manual that is printed at the start and when help is called.
      */
     private final static String PROTECT_MANUAL =
@@ -169,10 +174,13 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
         if(this.go())
         {
             // logs that the setup is complete
-            this.serverConn.log("Setup complete. Bot is starting.");
+            this.serverConn.log(SETUP_COMPLETE_MSG);
 
             // add ourselves as an observable
             this.model.addObserver(this);
+
+            // triggers the protect so it /actually/ is protecting that PlaceTile when it joins
+            protectTile(this.protectedRow, this.protectedCol, NO_OWNER);
 
             // starts the serverCon listening (not really used because the bot doesn't display the board at all)
             this.serverConn.start();
@@ -196,13 +204,26 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
             // cast our tile as a tile
             PlaceTile newTile = (PlaceTile) tile;
 
-            // sends a new tile back because we are selfish and want our name on the tile
-            // (we're protecting it after all)
-            if(newTile.getRow() == this.protectedRow && newTile.getCol() == this.protectedCol
-                    && !newTile.getOwner().equals(this.username))
-                this.serverConn.sendTile(new PlaceTile(this.protectedRow, this.protectedCol, this.username,
-                        PlaceColor.values()[this.protectedColor], System.currentTimeMillis()));
+            // checks if we need to protect our
+            protectTile(newTile.getRow(), newTile.getCol(), newTile.getOwner());
         }
+    }
+
+    /**
+     * This is the main protect method. It requires a row, a column and an owner to make sure we should be placing a PlaceTile.
+     *
+     * @param row The row of the PlaceTile.
+     * @param col The column of the PlaceTile.
+     * @param owner The owner of the PlaceTile.
+     */
+    private void protectTile(int row, int col, String owner)
+    {
+        // sends a new tile back because we are selfish and want our name on the tile
+        // (we're protecting it after all)
+        if(row == this.protectedRow && col == this.protectedCol
+                && !owner.equals(this.username))
+            this.serverConn.sendTile(new PlaceTile(this.protectedRow, this.protectedCol, this.username,
+                    PlaceColor.values()[this.protectedColor], System.currentTimeMillis()));
     }
 
     /**
@@ -301,7 +322,7 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
     private void exit()
     {
         // logs we are exiting
-        this.serverConn.log("Exiting the Bot.");
+        this.serverConn.log(EXIT_MSG);
         // sets go to false indicating to the thread it needs to stop
         this.go = false;
     }
@@ -323,7 +344,7 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
     private void pause()
     {
         // logs we are pausing the fill
-        this.serverConn.log("Pausing the fill. To resume, use \"resume\".");
+        this.serverConn.log(PAUSE_MSG);
         // pauses the fill
         this.pause = true;
     }
@@ -334,7 +355,9 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
     private void resume()
     {
         // logs that we will resume
-        this.serverConn.log("Resuming the fill.");
+        this.serverConn.log(RESUME_MSG);
+        // triggers a protect automatically
+        protectTile(this.protectedRow, this.protectedCol, NO_OWNER);
         // resumes the fill
         this.pause = false;
     }
@@ -438,13 +461,13 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
     private void invalidCommand(String command)
     {
         // logs the invalid command
-        this.serverConn.log("\"" + command + "\" is not a valid command.");
+        this.serverConn.log("\"" + command + "\" " + INVALID_MSG);
     }
 
     private void badFormat(String command)
     {
         // logs the bad format
-        this.serverConn.log("\"" + command + "\" was formatted incorrectly. Try again.");
+        this.serverConn.log("\"" + command + "\" " + FORMAT_MSG);
     }
 
     /**
@@ -455,7 +478,7 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
     private void badCommand(String command)
     {
         // logs the bad command
-        this.serverConn.log("\"" + command + "\" is not recognized as a command.");
+        this.serverConn.log("\"" + command + "\" " + BAD_CMD_MSG);
     }
 
     /**

@@ -121,7 +121,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
         this.model = model;
 
         // logs that the setup is complete
-        this.serverConn.log("Setup complete. Bot is starting.");
+        this.serverConn.log(SETUP_COMPLETE_MSG);
 
         // starts the serverCon listening (not really used because the bot doesn't display the board at all)
         this.serverConn.start();
@@ -184,7 +184,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
     public void listen(Scanner in)
     {
         // prints out help before the first run so users know what commands there are
-        BotApplication.printHelp( RANDOM_MANUAL );
+        BotApplication.printHelp(RANDOM_MANUAL);
         // continues looping until we need to quit
         while(this.go())
         {
@@ -259,7 +259,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
     private void exit()
     {
         // logs we are exiting
-        this.serverConn.log("Exiting the Bot.");
+        this.serverConn.log(EXIT_MSG);
         // sets go to false indicating to the thread it needs to stop
         this.go = false;
     }
@@ -284,7 +284,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
     private void pause()
     {
         // logs we are pausing the fill
-        this.serverConn.log("Pausing the fill. To resume, use \"resume\".");
+        this.serverConn.log(PAUSE_MSG);
         // pauses the fill
         this.pause = true;
     }
@@ -295,7 +295,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
     private void resume()
     {
         // logs that we will resume
-        this.serverConn.log("Resuming the fill.");
+        this.serverConn.log(RESUME_MSG);
         // resumes the fill
         this.pause = false;
     }
@@ -383,7 +383,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
     private void invalidCommand(String command)
     {
         // logs the invalid command
-        this.serverConn.log("\"" + command + "\" is not a valid command.");
+        this.serverConn.log("\"" + command + "\" " + INVALID_MSG);
     }
 
     /**
@@ -394,7 +394,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
     private void badFormat(String command)
     {
         // logs the bad format
-        this.serverConn.log("\"" + command + "\" was formatted incorrectly. Try again.");
+        this.serverConn.log("\"" + command + "\" " + FORMAT_MSG);
     }
 
     /**
@@ -405,7 +405,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
     private void badCommand(String command)
     {
         // logs the bad command
-        this.serverConn.log("\"" + command + "\" is not recognized as a valid command.");
+        this.serverConn.log("\"" + command + "\" " + BAD_CMD_MSG);
     }
 
     /**
