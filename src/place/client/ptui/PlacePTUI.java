@@ -19,7 +19,8 @@ import java.util.*;
  */
 public class PlacePTUI extends ConsoleApplication implements Observer
 {
-    private List<String> parameters;
+
+    private final static String PROMPT = "Enter a tile to color (row col color): ";
 
     private String username;
 
@@ -27,7 +28,12 @@ public class PlacePTUI extends ConsoleApplication implements Observer
 
     private NetworkClient serverConn;
 
-    private boolean go = false;
+    private boolean go;
+
+    private boolean go()
+    {
+        return this.go;
+    }
 
     /**
      * Initializes client before doing anything with model of our board
@@ -37,11 +43,11 @@ public class PlacePTUI extends ConsoleApplication implements Observer
         // calls the superclass' init method just in case there's something there.
         super.init();
 
-        this.parameters = super.getArguments();
+        List<String> parameters = super.getArguments();
         // Get command line arguments to be used
-        String hostname = this.parameters.get(0);
-        int port = Integer.parseInt(this.parameters.get(1));
-        this.username = this.parameters.get(2);
+        String hostname = parameters.get(0);
+        int port = Integer.parseInt(parameters.get(1));
+        this.username = parameters.get(2);
 
         // Creates blank model for board
         this.model = new PlaceBoardObservable();
@@ -71,9 +77,6 @@ public class PlacePTUI extends ConsoleApplication implements Observer
         // make PTUI an observer of the board
         this.model.addObserver(this);
 
-        // Display current board now it has been built
-        printBoard();
-
         this.go = true;
 
         // Starts our run function
@@ -83,10 +86,14 @@ public class PlacePTUI extends ConsoleApplication implements Observer
     /**
      * Function that gets run to continuously check for user input
      */
-    public void run( Scanner in ) {
-        System.out.println("\nSelect a tile to color (row col color): ");
+    public void run( Scanner in )
+    {
+        // prints the board
+        printBoard();
+        // prompts the user to input
+        this.serverConn.log(PROMPT);
 
-        while(this.go) {
+        while(this.go()) {
             String [] playerInput = in.nextLine().trim().split(" ");
             PlaceTile newTile;
 
@@ -94,7 +101,9 @@ public class PlacePTUI extends ConsoleApplication implements Observer
             if(playerInput[0].equals("-1") && playerInput.length == 1) {
                 this.go = false;
             }
-            else if(playerInput.length != 3) {  //Checks for invalid input
+            else if(playerInput.length != 3) {
+                // if the user enters something that isn't -1 and doesn't have 3 arguments
+                // let them know their input was invalid.
                 this.serverConn.logErr("Please enter a valid command.");
             }
             else {
@@ -139,21 +148,26 @@ public class PlacePTUI extends ConsoleApplication implements Observer
      * Update the state of our model with user input from the console.
      */
     private void refresh() {
+        // reprints the board
         printBoard();
-        System.out.println("\nSelect a tile to color (row col color): ");
+        // prompts the user again
+        System.out.println(PROMPT);
     }
 
     /**
-     * Used to update our model
-     * @param o Our model of the board we are observing
-     * @param arg An object -- Not used
+     * Used to update our model.
+     *
+     * @param o Our model of the board we are observing.
+     * @param arg An object -- Not used.
      */
     @Override
     public void update(Observable o, Object arg)
     {
-        assert o == this.model: "Update from an incorrect model of the board...";
+        // checks to make sure we are called from the correct model
+        assert o == this.model: "Update message came from non-board";
 
-        this.refresh();
+        // if we're good to go, we refresh
+        refresh();
     }
 
     /**

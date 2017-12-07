@@ -1,6 +1,5 @@
 package place.client.bot;
 
-import place.PlaceBoard;
 import place.PlaceBoardObservable;
 import place.PlaceException;
 import place.network.NetworkClient;

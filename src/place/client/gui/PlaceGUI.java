@@ -272,7 +272,6 @@ public class PlaceGUI extends Application implements Observer {
         primaryStage.setResizable(false);
 
         primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("PlaceIcon.png")));
-
         // we have now completed building our GUI, we can show it
         // anything we change in the GUI after this MUST be used with runLater( ... )
         primaryStage.show();
@@ -351,6 +350,7 @@ public class PlaceGUI extends Application implements Observer {
                 (ActionEvent) ->
                         javafx.application.Platform.runLater(() ->
                         {
+                            tileRectangle.setFill(getCurrentColor());
                             this.tilePreview.setFill(
                                     Color.rgb(tileColor.getRed(),tileColor.getGreen(),tileColor.getBlue())
                             );
@@ -362,6 +362,12 @@ public class PlaceGUI extends Application implements Observer {
                         })
         );
 
+        tileRectangle.setOnMouseExited(
+                (ActionEvent) -> javafx.application.Platform.runLater(() ->
+                        tileRectangle.setFill(Color.rgb(tileColor.getRed(), tileColor.getGreen(), tileColor.getBlue()))
+                )
+        );
+
         // sets an event listener to our rectangle to listen for clicks on this tile
         tileRectangle.setOnMouseClicked(
                 (ActionEvent) -> this.serverConn.sendTile(
@@ -371,6 +377,19 @@ public class PlaceGUI extends Application implements Observer {
 
         // returns the Rectangle that has been set up to reflect the PlaceTile on the board
         return tileRectangle;
+    }
+
+    /**
+     * A small method to return a Color object of the currently selected color.
+     *
+     * @return a Color object of the currently selected color.
+     */
+    private Color getCurrentColor()
+    {
+        // gets our currently selected color
+        PlaceColor currentSelected = PlaceColor.values()[this.currentColor];
+        // returns our current color
+        return Color.rgb(currentSelected.getRed(), currentSelected.getGreen(), currentSelected.getBlue());
     }
 
     /**
@@ -495,9 +514,9 @@ public class PlaceGUI extends Application implements Observer {
         // CONNECTION STATUS =========================
         // builds our most recent tile indicator
         // creates our text identifying the region
-        Text mostRecentHeader = new Text("Most recent ❓");
+        Text mostRecentHeader = new Text("Most recent (?)");
         // creates a tooltip about the most recent header
-        Tooltip mostRecentAbout = new Tooltip("What is tile info?\nMost recent shows the most recently placed\nPlace tile, wherever it may be on the board."
+        Tooltip mostRecentAbout = new Tooltip("Most recent shows the most recently placed tile."
         );
         // installs the tooltip
         Tooltip.install(mostRecentHeader, mostRecentAbout);
@@ -531,9 +550,9 @@ public class PlaceGUI extends Application implements Observer {
 
         // TILE INFO ============================
         // builds the tile preview
-        Text tileInfoHeader = new Text("Tile info ❓");
+        Text tileInfoHeader = new Text("Tile info (?)");
         // creates a tooltip about the most recent header
-        Tooltip tileInfoAbout = new Tooltip("What is tile info?\nTile info displays information about the\nPlace tile your mouse is hovering over.");
+        Tooltip tileInfoAbout = new Tooltip("Tile info displays information about the Place tile your mouse is over.");
         // installs the tooltip
         Tooltip.install(tileInfoHeader, tileInfoAbout);
 
