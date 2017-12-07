@@ -84,16 +84,21 @@ public class PlacePTUI extends ConsoleApplication implements Observer
     }
 
     /**
-     * Thread that gets run to check for user input
+     * Function that gets run to continuously check for user input
      */
     public void run( Scanner in ) {
+        System.out.println("\nSelect a tile to color (row col color): ");
+
         while(this.go) {
             String [] playerInput = in.nextLine().trim().split(" ");
             PlaceTile newTile;
 
             // Check if user exits program
-            if(playerInput[0].equals("-1")) {
+            if(playerInput[0].equals("-1") && playerInput.length == 1) {
                 this.go = false;
+            }
+            else if(playerInput.length != 3) {
+                this.serverConn.logErr("Please enter a valid command.");
             }
             else {
                 // Otherwise check for player input of where to place move
@@ -138,6 +143,7 @@ public class PlacePTUI extends ConsoleApplication implements Observer
      */
     private void refresh() {
         printBoard();
+        System.out.println("\nSelect a tile to color (row col color): ");
     }
 
     /**
