@@ -2,6 +2,8 @@ package place.client.bot;
 
 import place.PlaceColor;
 
+// fully commented
+
 /**
  * The protocol that a Bot must utilize.
  */
@@ -14,19 +16,39 @@ public interface BotProtocol {
      */
     String PROMPT = ">>> ";
 
-    //TODO: comment
+    /**
+     * A message that is sent when the setup of a Bot has been completed.
+     */
     String SETUP_COMPLETE_MSG = "Setup is complete. Bot will now start.";
 
+    /**
+     * A message that is sent when a Bot is exiting.
+     */
     String EXIT_MSG = "Exiting the Bot.";
 
-    String PAUSE_MSG = "Pausing the fill. To resume, use \"resume\".";
+    /**
+     * A message that is sent when a bot is entering pause mode.
+     */
+    String PAUSE_MSG = "Pausing the Bot. To resume, use \"resume\".";
 
+    /**
+     * A message that is sent when a Bot is resuming from pause.
+     */
     String RESUME_MSG = "Resuming the bot.";
 
+    /**
+     * A message that is sent at the end of an invalid command.
+     */
     String INVALID_MSG = "is not a valid command.";
 
+    /**
+     * A message that is sent at the end of a bad format command.
+     */
     String FORMAT_MSG = "was formatted incorrectly. Try again.";
 
+    /**
+     * A message that is sent after a command that isn't known.
+     */
     String BAD_CMD_MSG = "is not recognized as a command.";
 
     // COMMANDS ===================================

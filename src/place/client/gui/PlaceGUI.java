@@ -423,7 +423,7 @@ public class PlaceGUI extends Application implements Observer {
             colorChoice.setArcHeight(ARC_SIZE);
             colorChoice.setArcWidth(ARC_SIZE);
             // when the color is changes, our selected color is changed to color
-            colorChoice.setOnMouseClicked( (EventAction) -> this.setColor(color.getNumber()) );
+            colorChoice.setOnMouseClicked( (EventAction) -> this.setCurrentColor(color.getNumber()) );
 
             // change our cursor to be a POINTER as it's known in the CSS world when entering the rectangle
             colorChoice.setOnMouseEntered( (EventAction) -> scene.setCursor(Cursor.HAND) );
@@ -443,7 +443,7 @@ public class PlaceGUI extends Application implements Observer {
      *
      * @param color The color that the user selected.
      */
-    private void setColor(int color)
+    private void setCurrentColor(int color)
     {
         // sets our current color
         this.currentColor = color;
