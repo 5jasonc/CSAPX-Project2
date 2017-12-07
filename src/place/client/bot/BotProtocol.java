@@ -22,6 +22,11 @@ public interface BotProtocol {
     String EXIT = "exit";
 
     /**
+     * The WHERE command is used to display where the client is.
+     */
+    String ABOUT = "about";
+
+    /**
      * The QUIT command is the same as the exit command.
      */
     String QUIT = "quit";

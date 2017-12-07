@@ -206,7 +206,7 @@ public abstract class BotApplication {
                 // starts the bot (indication that it is go time)
                 bot.start( bot.serverConn, bot.username, bot.model );
                 // starts the bot listening for commands
-                bot.startCmdListening(in);
+                bot.listen(in);
             }
             catch( Exception e )
             {
@@ -224,7 +224,7 @@ public abstract class BotApplication {
     /**
      * A do-nothing command listener that must be implemented by a user. At the base it must handle exiting.
      */
-    public abstract void startCmdListening(Scanner in);
+    public abstract void listen(Scanner in);
 
     /**
      * This is used by the thread to make sure it should keep going.

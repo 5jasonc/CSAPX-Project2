@@ -26,6 +26,7 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
      * The protect command that is used to change the protect location.
      */
     private final static String PROTECT = "protect";
+
     /**
      * The change command is used to
      */
@@ -53,8 +54,9 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
         "----------------------------------------- Commands -----------------------------------------\n" +
         "  help : display this information again.\n" +
         "  quit : exits the bot cleanly.\n" +
+        "  about : displays the location of the bot.\n" +
         "  pause : pauses the bot at its current tile.\n" +
-        "  resume : resumes the bots cycle at its current tile.\n"+
+        "  resume : resumes the bots cycle at its current tile.\n" +
         "  protect row col color : protects a certain row, column, with a color\n" +
         "  change [\"row\",\"col\",\"color\"] value : changes the row, column, or color being protected.\n" +
         "  \t (note: row and col must fit on the board; color must be " + MIN_COLOR + "-" + MAX_COLOR + ".)\n" +
@@ -209,7 +211,7 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
      * @param in A Scanner which is used to take commands from the user to make the bot do different actions.
      */
     @Override
-    public void startCmdListening(Scanner in)
+    public void listen(Scanner in)
     {
         // prints out help before the first run so users know what commands there are
         BotApplication.printHelp( PROTECT_MANUAL );
@@ -236,6 +238,9 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
                 case EXIT:
                 case QUIT:
                     exit();
+                    break;
+                case ABOUT:
+                    about();
                     break;
                 case PAUSE:
                 case STOP:
@@ -299,6 +304,17 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
         this.serverConn.log("Exiting the Bot.");
         // sets go to false indicating to the thread it needs to stop
         this.go = false;
+    }
+
+    /**
+     * Displays information about the bot.
+     */
+    private void about()
+    {
+        // logs the current status of the bot
+        this.serverConn.log("This is ProtectionBot. It likes only a single tile. It protects that tile to keep it the same color.");
+        this.serverConn.log("ProtectionBot is currently protecting at (" + this.protectedRow + ", " + this.protectedCol + ").");
+        this.serverConn.log("It is keeping that tile the color " + PlaceColor.values()[this.protectedColor].name());
     }
 
     /**

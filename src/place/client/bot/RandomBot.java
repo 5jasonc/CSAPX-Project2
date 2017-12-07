@@ -28,9 +28,10 @@ public class RandomBot extends BotApplication implements BotProtocol {
             "----------------------------------------- Commands -----------------------------------------\n" +
             "  help : display this information again.\n" +
             "  quit : exits the bot cleanly.\n" +
+            "  about : displays the location of the bot.\n" +
             "  pause : pauses the bot at its current tile.\n" +
-            "  resume : resumes the bots cycle at its current tile.\n"+
-            "  speed [number] : sets the time in milliseconds between each tile the bot places.\n"+
+            "  resume : resumes the bots cycle at its current tile.\n" +
+            "  speed [number] : sets the time in milliseconds between each tile the bot places.\n" +
             "  \t (note: number must be " + MIN_SPEED + "-" + MAX_SPEED + "; if none given, speed is set to 1000.)\n" +
             "  sticky [color] : keeps the bot on a single color.\n" +
             "  \t (note: color must be " + MIN_COLOR + "-" + MAX_COLOR + "; if none given, color is set to the currently selected.)\n" +
@@ -180,7 +181,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
      * @param in A Scanner which is used to take commands from the user to make the bot do different actions.
      */
     @Override
-    public void startCmdListening(Scanner in)
+    public void listen(Scanner in)
     {
         // prints out help before the first run so users know what commands there are
         BotApplication.printHelp( RANDOM_MANUAL );
@@ -207,6 +208,9 @@ public class RandomBot extends BotApplication implements BotProtocol {
                 case EXIT:
                 case QUIT:
                     exit();
+                    break;
+                case ABOUT:
+                    about();
                     break;
                 case PAUSE:
                 case STOP:
@@ -258,6 +262,20 @@ public class RandomBot extends BotApplication implements BotProtocol {
         this.serverConn.log("Exiting the Bot.");
         // sets go to false indicating to the thread it needs to stop
         this.go = false;
+    }
+
+    /**
+     * Displays information about the bot.
+     */
+    private void about()
+    {
+        // logs the current status of the bot
+        this.serverConn.log("This is RandomBot. It likes to jump around to different tiles placing colors.");
+        this.serverConn.log("RandomBot doesn't like to say where it is, it moves around too quick for that.");
+        this.serverConn.log("RandomBot has two modes: random and sticky.");
+        this.serverConn.log((this.sticky) ? "It is currently in sticky mode, which means it places the same color on every tile it visits." +
+                "It is playing the color " + PlaceColor.values()[this.currentColor].name() :
+                "It is in random mode, which means it places random colors on every tile it visits.");
     }
 
     /**
@@ -408,7 +426,8 @@ public class RandomBot extends BotApplication implements BotProtocol {
      * @param args The arguments being passed in.
      *             Should be of the form: host port username
      */
-    public static void main(String[] args) {
+    public static void main(String[] args)
+    {
         // we need exactly 3 arguments
         if(args.length != 3)
         {

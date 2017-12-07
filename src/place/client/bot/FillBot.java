@@ -31,14 +31,15 @@ public class FillBot extends BotApplication implements BotProtocol {
         "----------------------------------------- Commands -----------------------------------------\n" +
         "  help : display this information again.\n" +
         "  quit : exits the bot cleanly.\n" +
+        "  about : displays the location of the bot.\n" +
         "  pause : pauses the bot at its current tile.\n" +
         "  resume : resumes the bots cycle at its current tile.\n"+
-        "  speed [number] : sets the time in milliseconds between each tile the bot places.\n"+
+        "  speed [number] : sets the time in milliseconds between each tile the bot places.\n" +
         "  \t (note: number must be " + MIN_SPEED + "-" + MAX_SPEED + "; if none given, speed is set to 1000.)\n" +
         "  sticky [color] : keeps the bot on a single color.\n" +
         "  \t (note: color must be " + MIN_COLOR + "-" + MAX_COLOR + "; if none given, color is set to the currently selected.)\n" +
         "  cycle : fills the board with a single color then goes to the next.\n" +
-        "  rainbow : change color to the next color for every tile placed.\n"+
+        "  rainbow : change color to the next color for every tile placed.\n" +
         "  random : change the color to a random color for every tile placed.\n" +
         "--------------------------------------------------------------------------------------------";
 
@@ -58,6 +59,10 @@ public class FillBot extends BotApplication implements BotProtocol {
      * The model which is used to house the board.
      */
     private PlaceBoardObservable model;
+
+    private int currentRow;
+
+    private int currentCol;
 
     /**
      * The currently selected PlaceColor that will be used to send to the server to make a move.
@@ -159,8 +164,8 @@ public class FillBot extends BotApplication implements BotProtocol {
     private void run()
     {
         // used to indicate the current row and column
-        int currentRow = 0;
-        int currentCol = 0;
+        this.currentRow = 0;
+        this.currentCol = 0;
 
         // gets the highest row and column we can go to and subtracts
         int rows = this.model.getDIM();
@@ -209,7 +214,7 @@ public class FillBot extends BotApplication implements BotProtocol {
      * @param in A Scanner which is used to take commands from the user to make the bot do different actions.
      */
     @Override
-    public void startCmdListening(Scanner in)
+    public void listen(Scanner in)
     {
         // prints out help before the first run so users know what commands there are
         BotApplication.printHelp(FILL_MANUAL);
@@ -236,6 +241,9 @@ public class FillBot extends BotApplication implements BotProtocol {
                 case EXIT:
                 case QUIT:
                     exit();
+                    break;
+                case ABOUT:
+                    about();
                     break;
                 case PAUSE:
                 case STOP:
@@ -298,6 +306,23 @@ public class FillBot extends BotApplication implements BotProtocol {
         this.serverConn.log("Exiting the Bot.");
         // sets go to false indicating to the thread it needs to stop
         this.go = false;
+    }
+
+    /**
+     * Displays information about the bot.
+     */
+    private void about()
+    {
+        // logs the current status of the bot
+        this.serverConn.log("This is FillBot. It likes to fill the entire board with color.");
+        this.serverConn.log("FillBot has four modes: cycle, sticky, rainbow, and random.");
+        this.serverConn.log("It is currently set to " +
+                ((this.sticky) ? "sticky mode, which means it only places a single color, always." :
+                        ((this.rainbow) ? "rainbow mode, which means it changes to the next color for every tile." :
+                                ((this.random) ? "random mode, which means it chooses a random color for every tile.":
+                                                 "cycle mode, which means it fills the board with one color, then moves to the next."))));
+        this.serverConn.log("FillBot is currently filling at " + this.currentRow + ", " + this.currentCol + ").");
+        this.serverConn.log("Its current color is " + PlaceColor.values()[this.currentColor].name());
     }
 
     /**

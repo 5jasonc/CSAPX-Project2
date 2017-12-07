@@ -5,6 +5,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -21,8 +22,6 @@ import place.PlaceException;
 import place.PlaceTile;
 import place.network.NetworkClient;
 import place.PlaceBoardObservable;
-
-// fully commented
 
 /**
  * A GUI client which connects to a PlaceServer.
@@ -84,11 +83,6 @@ public class PlaceGUI extends Application implements Observer {
      */
     private static final Insets MAIN_GRID_INSETS = new Insets(0, 10, 10, 15);
 
-    /**
-     * The green color used by the connection status indicator.
-     */
-    private static final Color GREEN = Color.web("#4dcc6d");
-
     //===========================================
 
     /**
@@ -127,6 +121,7 @@ public class PlaceGUI extends Application implements Observer {
     private int rectSize;
 
     // SELECTED COLOR =============================
+
     /**
      * The text that is used to show the name of the currently selected color in the VBox.
      */
@@ -136,6 +131,33 @@ public class PlaceGUI extends Application implements Observer {
      * A Rectangle which has a preview of the currently selected color.
      */
     private Circle selectedColorPreview;
+
+    // MOST RECENT TILE ==============================
+
+    /**
+     * A Rectangle that gets updated with every new tile that is placed
+     */
+    private Rectangle mostRecentTile;
+
+    /**
+     * A Text object that has the location of the most recently placed tile.
+     */
+    private Text mostRecentLocationInfo;
+
+    /**
+     * The Text object that has the owner of the most recently placed tile.
+     */
+    private Text mostRecentOwnerInfo;
+
+    /**
+     * The Text object that has the date on which the most recently placed tile was placed.
+     */
+    private Text mostRecentCreateDateInfo;
+
+    /**
+     * The Text object that has the time at which the most recently placed tile was placed.
+     */
+    private Text mostRecentCreateTimeInfo;
 
     // TILE PREVIEW ===============================
     /**
@@ -463,31 +485,63 @@ public class PlaceGUI extends Application implements Observer {
         this.selectedColorPreview.setStroke(Color.DARKGREY);
         this.selectedColorPreview.setStrokeWidth(1.5);
 
+
         // SPACER ============================
         // builds a new spacer and sets its priority to always
         Region spacer1 = new Region();
         VBox.setVgrow(spacer1, Priority.ALWAYS);
 
-        // CONNECTION STATUS =========================
-        // builds our connection status indicator
-        Text connectionStatusHeader = new Text("Status");
-        Text connectionStatus = new Text("Connected");
 
-        // stylizes our items
-        connectionStatusHeader.setFill(Color.WHITE);
-        connectionStatus.setFill(GREEN);
+        // CONNECTION STATUS =========================
+        // builds our most recent tile indicator
+        // creates our text identifying the region
+        Text mostRecentHeader = new Text("Most recent ❓");
+        // creates a tooltip about the most recent header
+        Tooltip mostRecentAbout = new Tooltip("What is tile info?\nMost recent shows the most recently placed\nPlace tile, wherever it may be on the board."
+        );
+        // installs the tooltip
+        Tooltip.install(mostRecentHeader, mostRecentAbout);
+
+        // creates our most recent tile rectangle
+        this.mostRecentTile = new Rectangle(
+                TILE_PREVIEW_SIZE, TILE_PREVIEW_SIZE, Color.rgb(selected.getRed(), selected.getGreen(), selected.getBlue())
+        );
+        // creates our information
+        this.mostRecentLocationInfo = new Text("No new");
+        this.mostRecentOwnerInfo = new Text("tiles yet.");
+        // these two are empty and are only filled once a changed tile has been read in.
+        this.mostRecentCreateDateInfo = new Text("");
+        this.mostRecentCreateTimeInfo = new Text("");
+
+        // stylizes each of the information bits
+        mostRecentHeader.setFill(Color.WHITE);
+        this.mostRecentTile.setStroke(Color.DARKGREY);
+        this.mostRecentTile.setStrokeWidth(1.5);
+        this.mostRecentLocationInfo.setFill(Color.WHITE);
+        this.mostRecentOwnerInfo.setFill(Color.WHITE);
+        this.mostRecentCreateDateInfo.setFill(Color.WHITE);
+        this.mostRecentCreateTimeInfo.setFill(Color.WHITE);
+
 
         // SPACER 2 ==========================
         // builds a new spacer and sets its priority to always
         Region spacer2 = new Region();
         VBox.setVgrow(spacer2, Priority.ALWAYS);
 
+
         // TILE INFO ============================
         // builds the tile preview
-        Text tileInfoHeader = new Text("Tile info");
+        Text tileInfoHeader = new Text("Tile info ❓");
+        // creates a tooltip about the most recent header
+        Tooltip tileInfoAbout = new Tooltip("What is tile info?\nTile info displays information about the\nPlace tile your mouse is hovering over.");
+        // installs the tooltip
+        Tooltip.install(tileInfoHeader, tileInfoAbout);
+
+        // creates a new tile preview rectangle.
         this.tilePreview = new Rectangle(
                 TILE_PREVIEW_SIZE, TILE_PREVIEW_SIZE, Color.rgb(selected.getRed(), selected.getGreen(), selected.getBlue())
         );
+        // creates our tile preview information texts
         this.tileLocationInfo = new Text("(0,0)");
         this.tileOwnerInfo = new Text("Owner");
         this.tileCreateDateInfo = new Text("12/31/69");
@@ -502,14 +556,19 @@ public class PlaceGUI extends Application implements Observer {
         this.tileCreateDateInfo.setFill(Color.WHITE);
         this.tileCreateTimeInfo.setFill(Color.WHITE);
 
+
         // ADDING TO VBOX ==============================
         leftVBox.getChildren().addAll(
                 selectedColorPre,
                 this.selectedColorPreview,
                 this.selectedColorName,
                 spacer1,
-                connectionStatusHeader,
-                connectionStatus,
+                mostRecentHeader,
+                this.mostRecentTile,
+                this.mostRecentLocationInfo,
+                this.mostRecentOwnerInfo,
+                this.mostRecentCreateDateInfo,
+                this.mostRecentCreateTimeInfo,
                 spacer2,
                 tileInfoHeader,
                 this.tilePreview,
@@ -560,8 +619,9 @@ public class PlaceGUI extends Application implements Observer {
         // CHANGING THE TILE ON SCREEN ===========================
         // using runLater to join this method with the JavaFX thread
         // set our tile in its correct place
+        updateMostRecent(tile);
         javafx.application.Platform.runLater(
-                () -> mainGrid.add(buildSingleTile(tile), tile.getCol(), tile.getRow())
+                () -> this.mainGrid.add(buildSingleTile(tile), tile.getCol(), tile.getRow())
         );
     }
 
@@ -582,6 +642,37 @@ public class PlaceGUI extends Application implements Observer {
                 javafx.application.Platform.runLater(() -> mainGrid.add(buildSingleTile(tile), tile.getCol(), tile.getRow()));
             }
         }
+    }
+
+    /**
+     * Updates the most recently placed tile in the GUI left VBox.
+     *
+     * @param tile The tile that was most recently placed.
+     */
+    private void updateMostRecent(PlaceTile tile)
+    {
+        // gets our color
+        PlaceColor tileColor = tile.getColor();
+
+        // creates a formatter for the date so that it appears as MM/DD/YY on the tile information center
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yy");
+        // formats the actual information
+        String date = dateFormat.format(new Date(tile.getTime()));
+        // creates a formatter for the time so that it appears as HH:MM:SS in 24-hour time
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+        // formats the actual time information
+        String time = timeFormat.format(new Date(tile.getTime()));
+
+        javafx.application.Platform.runLater(
+                () ->
+                {
+                    this.mostRecentTile.setFill(Color.rgb(tileColor.getRed(), tileColor.getGreen(), tileColor.getBlue()));
+                    this.mostRecentLocationInfo.setText("(" + tile.getRow() + ", " + tile.getCol() + ")");
+                    this.mostRecentOwnerInfo.setText(tile.getOwner());
+                    this.mostRecentCreateDateInfo.setText(date);
+                    this.mostRecentCreateTimeInfo.setText(time);
+                }
+        );
     }
 
     /**
