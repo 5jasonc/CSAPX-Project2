@@ -519,7 +519,7 @@ public class PlaceGUI extends Application implements Observer {
         // creates our text identifying the region
         Text mostRecentHeader = new Text("Most recent (?)");
         // creates a tooltip about the most recent header
-        Tooltip mostRecentAbout = new Tooltip("Most recent shows the most recently placed tile."
+        Tooltip mostRecentAbout = new Tooltip("Shows the most recently placed tile."
         );
         // installs the tooltip
         Tooltip.install(mostRecentHeader, mostRecentAbout);
@@ -555,7 +555,7 @@ public class PlaceGUI extends Application implements Observer {
         // builds the tile preview
         Text tileInfoHeader = new Text("Tile info (?)");
         // creates a tooltip about the most recent header
-        Tooltip tileInfoAbout = new Tooltip("Tile info displays information about the tile your mouse is over.");
+        Tooltip tileInfoAbout = new Tooltip("Displays information about the tile your mouse is over.");
         // installs the tooltip
         Tooltip.install(tileInfoHeader, tileInfoAbout);
 

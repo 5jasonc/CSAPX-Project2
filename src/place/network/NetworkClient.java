@@ -109,12 +109,13 @@ public class NetworkClient {
 
 
             // COMMUNICATION BUILDING SEQUENCE ================================
-            // sets the in and out streams
+            // create the out stream
             this.out = new ObjectOutputStream( serverConn.getOutputStream() );
             // flushes out just in case
             out.flush();
-            this.in = new ObjectInputStream( serverConn.getInputStream() );
 
+            // creates the in stream
+            this.in = new ObjectInputStream( serverConn.getInputStream() );
 
             // LOG IN SEQUENCE ================================
             // write our login request with our username
