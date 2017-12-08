@@ -102,8 +102,7 @@ public abstract class BotApplication {
             }
             catch( Exception ie )
             {
-                // if ANY sort of issue is had while running, print it to standard error
-                System.err.println("Bot thread interrupted.");
+                // if we hit an issue, we immediately close
             }
             finally
             {
@@ -125,8 +124,10 @@ public abstract class BotApplication {
     /**
      * The init method is the same for all Bots. They require the same setup every time. Classes can override them, but
      * they must run the super method first.
+     *
+     * THIS INIT METHOD IS PRIVATE BECAUSE THE INIT METHOD OF BOTS IS ALWAYS THE SAME.
      */
-    public void init() throws Exception
+    private void init() throws Exception
     {
         // gets our arguments from BotApplication
         List<String> arguments = getArguments();

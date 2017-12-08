@@ -27,7 +27,7 @@ public class NetworkServer
     /**
      * The maximum number of connections the server can have from any client.
      */
-    private static final int MAX_CONNECTIONS = 100;
+    private static final int MAX_TOTAL_CONNECTIONS = 100;
 
     /**
      * The maximum number of connections a single host can have to our server.
@@ -46,6 +46,9 @@ public class NetworkServer
      */
     private Map<InetAddress, Integer> connections;
 
+    /**
+     * The total number of connections on the server at the current moment. The maximum connections is 100.
+     */
     private int totalConnections;
 
     /**
@@ -91,46 +94,51 @@ public class NetworkServer
             if(!connections.containsKey(location))
                 connections.put(location, 0);
 
-            // checks if our username is valid or not (a.k.a. is there a key with our username?)
-            if(!usernameTaken(usernameRequest))
+            // if the username is taken
+            if(usernameTaken(usernameRequest))
             {
-                // put ourselves in the HashMap
-                this.users.put(usernameRequest, out);
-
-                // if we are able to accept another connection
-                if (this.connections.get(location) < MAX_CONNECTIONS_SINGLE_HOST && this.totalConnections < MAX_CONNECTIONS)
-                {
-                    // adds one to the number of connections from this host
-                    this.connections.put(location, this.connections.get(location) + 1);
-                    // adds one to the total connections
-                    ++this.totalConnections;
-
-                    // tell the user they were logged in successfully
-                    out.writeUnshared(new PlaceRequest<>(RequestType.LOGIN_SUCCESS, usernameRequest));
-                    // sends the board as well since we have connected and we need to build our board
-                    out.writeUnshared(new PlaceRequest<>(RequestType.BOARD, this.board));
-                    // return true iff login was successful
-                    return true;
-                }
-                else
-                {
-                    // if we don't have enough room on the server, send an error (we return false later)
-                    out.writeUnshared(new PlaceRequest<>(RequestType.ERROR, "Server full"));
-                }
-            }
-            else
-            {
-                // tell the user the username is taken
+                // tell the user the username they requested is taken
                 out.writeUnshared(new PlaceRequest<>(RequestType.ERROR, "Username taken"));
             }
-            // write our result out (doesn't matter which because either way we need to send something)
+            // else if the number of connections from their IP is at max
+            else if (this.connections.get(location) >= MAX_CONNECTIONS_SINGLE_HOST)
+            {
+                // tell the user there are too many connections from their IP
+                out.writeUnshared(new PlaceRequest<>(RequestType.ERROR, "Too many connections from your IP"));
+            }
+            // else if the number of connections is at max
+            else if (this.totalConnections >= MAX_TOTAL_CONNECTIONS)
+            {
+                // tell the user the server is full
+                out.writeUnshared(new PlaceRequest<>(RequestType.ERROR, "Server full"));
+            }
+            // if we are able to accept another connection and the username isn't taken, we get to this point
+            else
+            {
+                // put our new user in the HashMap
+                this.users.put(usernameRequest, out);
+
+                // adds one to the number of connections from this host
+                this.connections.put(location, this.connections.get(location) + 1);
+
+                // adds one to the total connections
+                ++this.totalConnections;
+
+                // tell the user they were logged in successfully
+                out.writeUnshared(new PlaceRequest<>(RequestType.LOGIN_SUCCESS, usernameRequest));
+                // then immediately send the current board so they can begin setup immediately
+                out.writeUnshared(new PlaceRequest<>(RequestType.BOARD, this.board));
+                // this is the only place we return true
+                return true;
+            }
+            // flush the output
             out.flush();
         }
         catch(IOException e)
         {
             // oops
         }
-        // if login fails, we let the PlaceClientThread
+        // if login fails, we let the PlaceClientThread know by returning false (so it may close properly)
         return false;
     }
 
@@ -161,16 +169,18 @@ public class NetworkServer
         // gets the ObjectOutputStream associated with the username
         ObjectOutputStream out = this.users.get(username);
 
-        // alerts the user they sent a bad request as well as the type (if somehow we get here they are being naughty
+        // alerts the user they sent a bad request as well as the type (if somehow we get here, they are being naughty
         // and using a custom client.)
         // please don't be that person
-        out.writeObject(new PlaceRequest<>(PlaceRequest.RequestType.ERROR, "Bad request received: " + type + ". Terminating connection."));
-
-        // prints to the server log that user has sent a bad request
-        logErr("Bad request received from " + username + ". REQUEST: " + type);
+        out.writeObject(new PlaceRequest<>(
+                PlaceRequest.RequestType.ERROR, "Bad request received: " + type + ". Terminating connection.")
+        );
 
         // flushes the stream so it sends
         out.flush();
+
+        // prints to the server log that user has sent a bad request
+        logErr("Bad request received from " + username + ". REQUEST: " + type);
     }
 
     /**

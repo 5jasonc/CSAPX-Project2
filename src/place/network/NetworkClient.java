@@ -11,8 +11,6 @@ import java.io.ObjectOutputStream;
 
 import java.net.Socket;
 
-import static java.lang.Thread.sleep;
-
 // fully commented
 
 /**
@@ -128,14 +126,18 @@ public class NetworkClient {
             switch (response.getType())
             {
                 case LOGIN_SUCCESS:
+                    // logs our successful login
                     log("Successfully joined Place server as \"" + response.getData() + "\".");
                     break;
                 case ERROR:
-                    logErr("Failed to join Place server. Server response: " + response.getData() + ".");
+                    // logs the error we receive
+                    logErr("Failed to join Place server.");
+                    logErr("Server response: " + response.getData() + ".");
                     this.close();
                     throw new PlaceException("Unable to join.");
                 default:
-                    logErr("Bad response received from server.");
+                    // if we get a bad response from the server, log it here
+                    logErr("Bad response received from server. Disconnecting.");
                     this.close();
                     throw new PlaceException("Unable to join.");
             }

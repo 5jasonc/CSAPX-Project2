@@ -15,8 +15,6 @@ import java.util.Scanner;
 /**
  * A multithreaded Bot client that connects to a PlaceServer and performs actions that FILL the screen with color.
  *
- * TODO: Put the command response methods as static methods in BotApplication
- *
  * @author Kevin Becker (kjb2503)
  */
 public class ProtectionBot extends BotApplication implements BotProtocol, Observer {
@@ -336,6 +334,7 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
         this.serverConn.log("This is ProtectionBot. It likes only a single tile. It protects that tile to keep it the same color.");
         this.serverConn.log("ProtectionBot is currently protecting at (" + this.protectedRow + ", " + this.protectedCol + ").");
         this.serverConn.log("It is keeping that tile the color " + PlaceColor.values()[this.protectedColor].name());
+        this.serverConn.log("To see a list of commands, type \"help\" and hit enter.");
     }
 
     /**

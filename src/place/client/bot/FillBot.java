@@ -329,6 +329,8 @@ public class FillBot extends BotApplication implements BotProtocol {
                                                  "cycle mode, which means it fills the board with one color, then moves to the next."))));
         this.serverConn.log("FillBot is currently filling at " + this.currentRow + ", " + this.currentCol + ").");
         this.serverConn.log("Its current color is " + PlaceColor.values()[this.currentColor].name());
+        this.serverConn.log("FillBot is placing a tile every " + this.speed + "ms.");
+        this.serverConn.log("To see a list of commands, type \"help\" and hit enter.");
     }
 
     /**

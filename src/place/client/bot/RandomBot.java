@@ -276,6 +276,8 @@ public class RandomBot extends BotApplication implements BotProtocol {
         this.serverConn.log((this.sticky) ? "It is currently in sticky mode, which means it places the same color on every tile it visits." +
                 "It is playing the color " + PlaceColor.values()[this.currentColor].name() :
                 "It is in random mode, which means it places random colors on every tile it visits.");
+        this.serverConn.log("RandomBot is placing a tile every " + this.speed + "ms.");
+        this.serverConn.log("To see a list of commands, type \"help\" and hit enter.");
     }
 
     /**
