@@ -1,9 +1,5 @@
 package place.client.ptui;
 
-import place.PlaceException;
-
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
@@ -14,7 +10,7 @@ import java.util.Scanner;
  * This class is to be inherited by any console application.
  *
  * @author James Heliotis
- * Edits made by Jason Streeter (jcs1738)
+ * @author Jason Streeter (jcs1738)
  */
 public abstract class ConsoleApplication {
 

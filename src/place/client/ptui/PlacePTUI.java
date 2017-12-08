@@ -120,13 +120,8 @@ public class PlacePTUI extends ConsoleApplication implements Observer
                     // Sends user's move to the server
                     newTile = new PlaceTile(placeRow, placeCol, this.username, newColor, System.currentTimeMillis());
 
-                    // Checks to see if a valid tile was selected and sends it to server if it is
-                    if(this.model.getBoard().isValid(newTile)) {
-                        this.serverConn.sendTile(newTile);
-                    }
-                    else {
-                        this.serverConn.logErr("Please enter a valid tile on the board.");
-                    }
+                    // sends tile placement to server
+                    this.serverConn.sendTile(newTile);
                 }
                 else {
                     this.serverConn.logErr("Please enter a color value between 0-15.");
