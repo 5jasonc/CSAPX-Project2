@@ -27,14 +27,14 @@ public interface BotProtocol {
     String EXIT_MSG = "Exiting the Bot.";
 
     /**
-     * A message that is sent when a bot is entering pause mode.
+     * A message that is sent when a Bot is entering pause mode.
      */
     String PAUSE_MSG = "Pausing the Bot. To resume, use \"resume\".";
 
     /**
      * A message that is sent when a Bot is resuming from pause.
      */
-    String RESUME_MSG = "Resuming the bot.";
+    String RESUME_MSG = "Resuming the Bot.";
 
     /**
      * A message that is sent at the end of an invalid command.

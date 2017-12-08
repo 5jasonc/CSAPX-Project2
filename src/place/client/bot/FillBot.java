@@ -30,13 +30,13 @@ public class FillBot extends BotApplication implements BotProtocol {
     private static final String FILL_MANUAL =
         "----------------------------------------- Commands -----------------------------------------\n" +
         "  help : display this information again.\n" +
-        "  quit : exits the bot cleanly.\n" +
-        "  about : displays the location of the bot.\n" +
-        "  pause : pauses the bot at its current tile.\n" +
-        "  resume : resumes the bots cycle at its current tile.\n"+
-        "  speed [number] : sets the time in milliseconds between each tile the bot places.\n" +
+        "  quit : exits the Bot.\n" +
+        "  about : displays information about the Bot.\n" +
+        "  pause : pauses the Bot at its current tile.\n" +
+        "  resume : resumes filling at its current tile.\n"+
+        "  speed [number] : sets the time in milliseconds between each tile the Bot places.\n" +
         "  \t (note: number must be " + MIN_SPEED + "-" + MAX_SPEED + "; if none given, speed is set to 1000.)\n" +
-        "  sticky [color] : keeps the bot on a single color.\n" +
+        "  sticky [color] : keeps the Bot on a single color.\n" +
         "  \t (note: color must be " + MIN_COLOR + "-" + MAX_COLOR + "; if none given, color is set to the currently selected.)\n" +
         "  cycle : fills the board with a single color then goes to the next.\n" +
         "  rainbow : change color to the next color for every tile placed.\n" +
@@ -154,7 +154,7 @@ public class FillBot extends BotApplication implements BotProtocol {
         // logs that the setup is complete
         this.serverConn.log(SETUP_COMPLETE_MSG);
 
-        // starts the serverCon listening (not really used because the bot doesn't display the board at all)
+        // starts the serverCon listening (not really used because the Bot doesn't display the board at all)
         this.serverConn.start();
 
         // sets go to true
@@ -217,7 +217,7 @@ public class FillBot extends BotApplication implements BotProtocol {
     /**
      * Starts the listening for commands from the user to make the Bot do different actions.
      *
-     * @param in A Scanner which is used to take commands from the user to make the bot do different actions.
+     * @param in A Scanner which is used to take commands from the user to make the Bot do different actions.
      */
     @Override
     public void listen(Scanner in)
@@ -315,11 +315,11 @@ public class FillBot extends BotApplication implements BotProtocol {
     }
 
     /**
-     * Displays information about the bot.
+     * Displays information about the Bot.
      */
     private void about()
     {
-        // logs the current status of the bot
+        // logs the current status of the Bot
         this.serverConn.log("This is FillBot. It likes to fill the entire board with color.");
         this.serverConn.log("FillBot has four modes: cycle, sticky, rainbow, and random.");
         this.serverConn.log("It is currently set to " +
@@ -515,7 +515,7 @@ public class FillBot extends BotApplication implements BotProtocol {
         // we need exactly 3 arguments
         if(args.length != 3)
         {
-            System.err.println("Please run the bot as: ");
+            System.err.println("Please run the Bot as: ");
             System.err.println("$ java FillBot host port username");
             return;
         }

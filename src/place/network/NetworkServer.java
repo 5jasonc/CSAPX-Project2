@@ -6,6 +6,7 @@ import place.network.PlaceRequest.RequestType;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,7 +19,20 @@ import java.util.Map;
  */
 public class NetworkServer
 {
+    /**
+     * The header that gets printed before every log.
+     */
     private static final String LOG_HEADER = "[PlaceServer]: ";
+
+    /**
+     * The maximum number of connections the server can have from any client.
+     */
+    private static final int MAX_CONNECTIONS = 100;
+
+    /**
+     * The maximum number of connections a single host can have to our server.
+     */
+    private static final int MAX_CONNECTIONS_SINGLE_HOST = 10;
 
     /**
      * The Map that contains all of the currently connected users.
@@ -26,6 +40,13 @@ public class NetworkServer
      * The value is that user's ObjectOutputStream
      */
     private Map<String, ObjectOutputStream> users;
+
+    /**
+     * The connections that are coming from each location (prevents IP spam/DOS attack).
+     */
+    private Map<InetAddress, Integer> connections;
+
+    private int totalConnections;
 
     /**
      * The "master" PlaceBoard that is used to send to users and
@@ -44,6 +65,10 @@ public class NetworkServer
     {
         // creates a new HashMap that will house all of the logged in users
         this.users = new HashMap<>();
+
+        // creates a new HashMap that will house all of the internet locations for users
+        this.connections = new HashMap<>();
+
         // this holds the "master" PlaceBoard that will be updated with every move and sent to new users
         this.board = new PlaceBoard(dim);
     }
@@ -56,32 +81,47 @@ public class NetworkServer
      * @param usernameRequest The requested username from a user.
      * @param out The output stream for the user.
      */
-    public synchronized boolean login(String usernameRequest, ObjectOutputStream out)
+    public synchronized boolean login(String usernameRequest, InetAddress location, ObjectOutputStream out)
     {
         // checks if the username is taken
         // if it's not, log ourselves in and return true so user can update
         try
         {
+            // creates an entry in the connections Map if this is a new location
+            if(!connections.containsKey(location))
+                connections.put(location, 0);
+
             // checks if our username is valid or not (a.k.a. is there a key with our username?)
             if(!usernameTaken(usernameRequest))
             {
                 // put ourselves in the HashMap
-                users.put(usernameRequest, out);
+                this.users.put(usernameRequest, out);
 
-                // alert that user has connected
-                log(usernameRequest + " has joined the server");
+                // if we are able to accept another connection
+                if (this.connections.get(location) < MAX_CONNECTIONS_SINGLE_HOST && this.totalConnections < MAX_CONNECTIONS)
+                {
+                    // adds one to the number of connections from this host
+                    this.connections.put(location, this.connections.get(location) + 1);
+                    // adds one to the total connections
+                    ++this.totalConnections;
 
-                // tell the user they were logged in successfully
-                out.writeUnshared(new PlaceRequest<>(RequestType.LOGIN_SUCCESS, usernameRequest));
-                // sends the board as well since we have connected and we need to build our board
-                out.writeUnshared(new PlaceRequest<>(RequestType.BOARD, this.board));
-                // return true iff login was successful
-                return true;
+                    // tell the user they were logged in successfully
+                    out.writeUnshared(new PlaceRequest<>(RequestType.LOGIN_SUCCESS, usernameRequest));
+                    // sends the board as well since we have connected and we need to build our board
+                    out.writeUnshared(new PlaceRequest<>(RequestType.BOARD, this.board));
+                    // return true iff login was successful
+                    return true;
+                }
+                else
+                {
+                    // if we don't have enough room on the server, send an error (we return false later)
+                    out.writeUnshared(new PlaceRequest<>(RequestType.ERROR, "Server full"));
+                }
             }
             else
             {
                 // tell the user the username is taken
-                out.writeUnshared(new PlaceRequest<>(RequestType.ERROR, "Username taken."));
+                out.writeUnshared(new PlaceRequest<>(RequestType.ERROR, "Username taken"));
             }
             // write our result out (doesn't matter which because either way we need to send something)
             out.flush();
@@ -141,8 +181,18 @@ public class NetworkServer
      *
      * @param username The username of the user wishing to log out.
      */
-    public void logout(String username)
+    public void logout(String username, InetAddress location)
     {
+        // removes one from their location
+        this.connections.put(location, this.connections.get(location)-1);
+
+        // clears it from the map for memory saving purposes
+        if(this.connections.get(location) <= 0)
+            this.connections.remove(location);
+
+        // removes one from the total connections
+        --this.totalConnections;
+
         // logs a user out (essentially logs just removes them from the map)
         // since the ObjectOutputStream is just a pointer, this is all we have to do
         users.remove(username);

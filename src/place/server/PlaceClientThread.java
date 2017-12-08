@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import java.net.InetAddress;
 import java.net.Socket;
 
 import place.PlaceException;
@@ -28,6 +29,8 @@ public class PlaceClientThread
     private final static int COOLDOWN_TIME = 500;
 
     //==============================================
+
+    private InetAddress location;
 
     /**
      * The ObjectInputStream from the client (reads the requests that the client sends to server).
@@ -97,8 +100,11 @@ public class PlaceClientThread
         // tries to create a new PlaceClientThread
         try
         {
+            // sets our location
+            this.location = player.getInetAddress();
+
             // sets the ObjectOutputStream (need to do OUTPUT before we can do INPUT)
-            this.out = new ObjectOutputStream(player.getOutputStream());
+            this.out = new ObjectOutputStream( player.getOutputStream() );
             // sets the ObjectInputStream
             this.in = new ObjectInputStream( player.getInputStream() );
             // sets the networkServer
@@ -137,6 +143,7 @@ public class PlaceClientThread
                 // reads in a request from the user (blocks until it reads in)
                 PlaceRequest<?> request = ( PlaceRequest<?> ) in.readUnshared();
 
+                // determines the type of request we were sent
                 switch(request.getType())
                 {
                     // might have to rework this so that we set username in the constructor instead of here (might save
@@ -151,7 +158,12 @@ public class PlaceClientThread
 
                             // attempts to login here
                             if(login(usernameRequest))
+                            {
+                                // alert that user has connected
+                                log(usernameRequest + " has joined the server. [" + this.location + "]");
+                                // sets our username to the our actual username
                                 this.username = usernameRequest;
+                            }
                         }
                         break;
                     case CHANGE_TILE:
@@ -221,7 +233,7 @@ public class PlaceClientThread
     private boolean login(String usernameRequest)
     {
         // attempts to login to the server
-        return networkServer.login(usernameRequest, this.out);
+        return networkServer.login(usernameRequest, this.location, this.out);
     }
 
     /**
@@ -305,7 +317,7 @@ public class PlaceClientThread
         {
             // logs user out from the server before closing connections if they were allowed logged in
             if(this.username != null)
-                this.networkServer.logout(this.username);
+                this.networkServer.logout(this.username, this.location);
             // closes the in and out connections
             this.in.close();
             this.out.close();

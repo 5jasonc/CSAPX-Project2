@@ -57,11 +57,11 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
      */
     private final static String PROTECT_MANUAL =
         "----------------------------------------- Commands -----------------------------------------\n" +
-        "  help : display this information again.\n" +
-        "  quit : exits the bot cleanly.\n" +
-        "  about : displays the location of the bot.\n" +
-        "  pause : pauses the bot at its current tile.\n" +
-        "  resume : resumes the bots cycle at its current tile.\n" +
+        "  help : displays this help manual.\n" +
+        "  quit : exits the Bot.\n" +
+        "  about : displays information about the Bot.\n" +
+        "  pause : pauses the Bot's protection.\n" +
+        "  resume : resumes protecting the protected tile.\n" +
         "  protect row col color : protects a certain row, column, with a color\n" +
         "  change [\"row\",\"col\",\"color\"] value : changes the row, column, or color being protected.\n" +
         "  \t (note: row and col must fit on the board; color must be " + MIN_COLOR + "-" + MAX_COLOR + ".)\n" +
@@ -182,7 +182,7 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
             // triggers the protect so it /actually/ is protecting that PlaceTile when it joins
             protectTile(this.protectedRow, this.protectedCol, NO_OWNER);
 
-            // starts the serverCon listening (not really used because the bot doesn't display the board at all)
+            // starts the serverCon listening (not really used because the Bot doesn't display the board at all)
             this.serverConn.start();
         }
     }
@@ -229,7 +229,7 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
     /**
      * Starts the listening for commands from the user to make the Bot do different actions.
      *
-     * @param in A Scanner which is used to take commands from the user to make the bot do different actions.
+     * @param in A Scanner which is used to take commands from the user to make the Bot do different actions.
      */
     @Override
     public void listen(Scanner in)
@@ -328,11 +328,11 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
     }
 
     /**
-     * Displays information about the bot.
+     * Displays information about the Bot.
      */
     private void about()
     {
-        // logs the current status of the bot
+        // logs the current status of the Bot
         this.serverConn.log("This is ProtectionBot. It likes only a single tile. It protects that tile to keep it the same color.");
         this.serverConn.log("ProtectionBot is currently protecting at (" + this.protectedRow + ", " + this.protectedCol + ").");
         this.serverConn.log("It is keeping that tile the color " + PlaceColor.values()[this.protectedColor].name());
@@ -503,7 +503,7 @@ public class ProtectionBot extends BotApplication implements BotProtocol, Observ
         // we need exactly 6 arguments
         if(args.length != 6)
         {
-            System.err.println("Please run the bot as: ");
+            System.err.println("Please run the Bot as: ");
             System.err.println("$ java ProtectionBot host port username row col color");
             return;
         }

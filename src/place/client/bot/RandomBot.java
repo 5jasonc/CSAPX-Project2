@@ -26,14 +26,14 @@ public class RandomBot extends BotApplication implements BotProtocol {
      */
     private final static String RANDOM_MANUAL =
             "----------------------------------------- Commands -----------------------------------------\n" +
-            "  help : display this information again.\n" +
-            "  quit : exits the bot cleanly.\n" +
-            "  about : displays the location of the bot.\n" +
-            "  pause : pauses the bot at its current tile.\n" +
-            "  resume : resumes the bots cycle at its current tile.\n" +
-            "  speed [number] : sets the time in milliseconds between each tile the bot places.\n" +
+            "  help : displays this help manual.\n" +
+            "  quit : exits the Bot.\n" +
+            "  about : displays information about the Bot.\n" +
+            "  pause : pauses the Bot at its current tile.\n" +
+            "  resume : resumes placing tiles about the board.\n" +
+            "  speed [number] : sets the time in milliseconds between each tile the Bot places.\n" +
             "  \t (note: number must be " + MIN_SPEED + "-" + MAX_SPEED + "; if none given, speed is set to 1000.)\n" +
-            "  sticky [color] : keeps the bot on a single color.\n" +
+            "  sticky [color] : keeps the Bot on a single color.\n" +
             "  \t (note: color must be " + MIN_COLOR + "-" + MAX_COLOR + "; if none given, color is set to the currently selected.)\n" +
             "  random : change the color to a random color for every tile placed.\n" +
             "--------------------------------------------------------------------------------------------";
@@ -66,7 +66,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
     private int speed = DEFAULT_SPEED;
 
     /**
-     * The sticky boolean that is used to tell if they bot is sticking on a single color.
+     * The sticky boolean that is used to tell if they Bot is sticking on a single color.
      */
     private boolean sticky;
 
@@ -123,7 +123,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
         // logs that the setup is complete
         this.serverConn.log(SETUP_COMPLETE_MSG);
 
-        // starts the serverCon listening (not really used because the bot doesn't display the board at all)
+        // starts the serverCon listening (not really used because the Bot doesn't display the board at all)
         this.serverConn.start();
 
         // sets go to true
@@ -178,7 +178,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
     /**
      * Starts the listening for commands from the user to make the Bot do different actions.
      *
-     * @param in A Scanner which is used to take commands from the user to make the bot do different actions.
+     * @param in A Scanner which is used to take commands from the user to make the Bot do different actions.
      */
     @Override
     public void listen(Scanner in)
@@ -265,11 +265,11 @@ public class RandomBot extends BotApplication implements BotProtocol {
     }
 
     /**
-     * Displays information about the bot.
+     * Displays information about the Bot.
      */
     private void about()
     {
-        // logs the current status of the bot
+        // logs the current status of the Bot
         this.serverConn.log("This is RandomBot. It likes to jump around to different tiles placing colors.");
         this.serverConn.log("RandomBot doesn't like to say where it is, it moves around too quick for that.");
         this.serverConn.log("RandomBot has two modes: random and sticky.");
@@ -330,7 +330,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
     }
 
     /**
-     * Sets the mode of the Bot to be random mode. (This is default action of the bot.)
+     * Sets the mode of the Bot to be random mode. (This is default action of the Bot.)
      */
     private void random()
     {
@@ -431,7 +431,7 @@ public class RandomBot extends BotApplication implements BotProtocol {
         // we need exactly 3 arguments
         if(args.length != 3)
         {
-            System.err.println("Please run the bot as: ");
+            System.err.println("Please run the Bot as: ");
             System.err.println("$ java RandomBot host port username");
             return;
         }

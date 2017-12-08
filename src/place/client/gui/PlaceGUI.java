@@ -76,12 +76,12 @@ public class PlaceGUI extends Application implements Observer {
     /**
      * The padding Insets for the left-hand VBox.
      */
-    private static final Insets LEFT_VBOX_INSETS = new Insets(15,0,15,15);
+    private static final Insets LEFT_VBOX_INSETS = new Insets(15,25,20,25);
 
     /**
      * The padding Insets for the main grid.
      */
-    private static final Insets MAIN_GRID_INSETS = new Insets(0, 10, 10, 15);
+    private static final Insets MAIN_GRID_INSETS = new Insets(0, 10, 10, 10);
 
     //===========================================
 
@@ -89,6 +89,10 @@ public class PlaceGUI extends Application implements Observer {
      * The username that this user wishes to have.
      */
     private String username;
+
+    private String hostname;
+
+    private int port;
 
     /**
      * The model which is used to house the board.
@@ -201,8 +205,8 @@ public class PlaceGUI extends Application implements Observer {
         List < String > parameters = super.getParameters().getRaw();
 
         // gets our parameters that we need (host, port, username)
-        String host = parameters.get(0);
-        int port = Integer.parseInt(parameters.get(1));
+        this.hostname = parameters.get(0);
+        this.port = Integer.parseInt(parameters.get(1));
         this.username = parameters.get(2);
 
         // sets our model to a new blank PlaceBoardObservable
@@ -213,7 +217,7 @@ public class PlaceGUI extends Application implements Observer {
         {
             // sets our network client, this is the last thing we do to minimize time between receiving the board and
             // opening the GUI
-            this.serverConn = new NetworkClient(host, port, this.username, getClass().getSimpleName(), this.model);
+            this.serverConn = new NetworkClient(this.hostname, this.port, this.username, getClass().getSimpleName(), this.model);
         }
         catch(PlaceException e)
         {
@@ -266,7 +270,7 @@ public class PlaceGUI extends Application implements Observer {
         primaryStage.setScene(this.scene);
 
         // sets the title of our window
-        primaryStage.setTitle("k/Place: " + this.username);
+        primaryStage.setTitle("k/Place: " + this.username + "@" + this.hostname + ":" + this.port);
 
         // makes it so the user cannot rescale the window
         primaryStage.setResizable(false);
@@ -276,7 +280,6 @@ public class PlaceGUI extends Application implements Observer {
         // anything we change in the GUI after this MUST be used with runLater( ... )
         primaryStage.show();
     }
-
 
     /**
      * Builds a GridPane of Rectangle objects which are a visual representation of each PlaceTile.

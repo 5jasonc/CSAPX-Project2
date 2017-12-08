@@ -49,7 +49,7 @@ public abstract class BotApplication {
     private String className;
 
     /**
-     * Run a bot application.
+     * Run a Bot application.
      * Launch a standalone application. This method is typically called from the main method().
      * It must not be called more than once or an exception will be thrown. This is equivalent to launch(TheClass.class, args) where TheClass is the immediately enclosing class of the method that called launch. It must be a subclass of Application or a RuntimeException will be thrown.
      * The launch method does not return until the application has exited, either via a call to Platform.exit or all of the application windows have been closed.
@@ -64,7 +64,7 @@ public abstract class BotApplication {
     public static void launch(Class< ? extends BotApplication> botClass) { launch(botClass, new String[ 0 ]); }
 
     /**
-     * Run a complete bot application, with command line arguments.
+     * Run a complete Bot application, with command line arguments.
      *
      * Typical usage is:
      * public static void main(String[] args)
@@ -80,7 +80,7 @@ public abstract class BotApplication {
     {
         try
         {
-            // tries to set up a new instance of the bot class
+            // tries to set up a new instance of the Bot class
             BotApplication bot = botClass.newInstance();
 
             // sets our className
@@ -91,7 +91,7 @@ public abstract class BotApplication {
 
             try
             {
-                // tries to run the init method of the bot class
+                // tries to run the init method of the Bot class
                 bot.init();
                 // creates a new BotRunner (private class below)
                 bot.botThread = new Thread( new BotRunner( bot ) );
@@ -107,7 +107,7 @@ public abstract class BotApplication {
             }
             finally
             {
-                // stops the bot
+                // stops the Bot
                 bot.stop();
             }
         }
@@ -159,7 +159,7 @@ public abstract class BotApplication {
     }
 
     /**
-     * Used to fetch the bot application's command line arguments. It simply returns a list that was passed in as
+     * Used to fetch the Bot application's command line arguments. It simply returns a list that was passed in as
      * arguments.
      *
      * @return The string array of arguments passed in at launch as a List of Strings.
@@ -176,7 +176,7 @@ public abstract class BotApplication {
 
 
     /**
-     * A private class that keeps the bot running while the application should be running.
+     * A private class that keeps the Bot running while the application should be running.
      */
     private static class BotRunner implements Runnable
     {
@@ -196,15 +196,15 @@ public abstract class BotApplication {
         }
 
         /**
-         * The run method used by the thread for the bot.
+         * The run method used by the thread for the Bot.
          */
         public void run()
         {
             // once this completes, the Bot has disconnected from the PlaceServer for some reason
             try ( Scanner in = new Scanner( System.in ) ) {
-                // starts the bot (indication that it is go time)
+                // starts the Bot (indication that it is go time)
                 bot.start( bot.serverConn, bot.username, bot.model );
-                // starts the bot listening for commands
+                // starts the Bot listening for commands
                 bot.listen(in);
             }
             catch( Exception e )
@@ -216,7 +216,7 @@ public abstract class BotApplication {
     }
 
     /**
-     * The method that begins the start procedure of the bot.
+     * The method that begins the start procedure of the Bot.
      */
     public abstract void start( NetworkClient serverConn, String username, PlaceBoardObservable model ) throws Exception;
 
@@ -244,6 +244,11 @@ public abstract class BotApplication {
         System.out.println(manual);
     }
 
+    /**
+     * Prints out a help manual to the screen so a user of a Bot can tell what the Bot does..
+     *
+     * @param prompt The help manual that should be print to the screen.
+     */
     public static void prompt(String prompt)
     {
         System.out.print(prompt);
