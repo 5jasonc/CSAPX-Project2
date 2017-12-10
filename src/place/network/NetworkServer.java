@@ -320,7 +320,7 @@ public class NetworkServer
         System.err.println(LOG_HEADER + msg);
         // logs we have hit an error
         // auto flush is enabled, no need to flush()
-        this.log.println("[" + now() + "] ALERT: " + msg);
+        this.log.println("[" + now() + "]: ALERT! " + msg);
     }
 
     /**
