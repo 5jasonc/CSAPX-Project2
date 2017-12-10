@@ -15,7 +15,10 @@ import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Observer;
+import java.util.Observable;
+import java.util.List;
+import java.util.Date;
 
 import place.PlaceColor;
 import place.PlaceException;
@@ -83,6 +86,16 @@ public class PlaceGUI extends Application implements Observer {
      */
     private static final Insets MAIN_GRID_INSETS = new Insets(0, 10, 10, 10);
 
+    /**
+     * The date formatter used when a tile is changed.
+     */
+    private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MM/dd/yy");
+
+    /**
+     * The time formatter used when a tile is changed.
+     */
+    private final static SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss");
+
     //===========================================
 
     /**
@@ -90,8 +103,14 @@ public class PlaceGUI extends Application implements Observer {
      */
     private String username;
 
+    /**
+     * Our host name that we are connected to (used in title of window).
+     */
     private String hostname;
 
+    /**
+     * The port we are connected to (used in the title of window).
+     */
     private int port;
 
     /**
@@ -223,8 +242,6 @@ public class PlaceGUI extends Application implements Observer {
         {
             // closes serverConn
             this.serverConn.close();
-            // runs our stop method so that we can deconstruct anything we've built thus far
-            // this.stop();
             // tells the user about the issue we've run into
             throw e;
         }
@@ -275,7 +292,9 @@ public class PlaceGUI extends Application implements Observer {
         // makes it so the user cannot rescale the window
         primaryStage.setResizable(false);
 
+        // sets the icon on our window
         primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("PlaceIcon.png")));
+
         // we have now completed building our GUI, we can show it
         // anything we change in the GUI after this MUST be used with runLater( ... )
         primaryStage.show();
@@ -339,14 +358,10 @@ public class PlaceGUI extends Application implements Observer {
 
 
         // CREATING EVENT LISTENERS ========================
-        // creates a formatter for the date so that it appears as MM/DD/YY on the tile information center
-        SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yy");
-        // formats the actual information
-        String date = dateFormat.format(new Date(tile.getTime()));
-        // creates a formatter for the time so that it appears as HH:MM:SS in 24-hour time
-        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
-        // formats the actual time information
-        String time = timeFormat.format(new Date(tile.getTime()));
+        // formats the DATE
+        String date = DATE_FORMAT.format(new Date(tile.getTime()));
+        // formats the TIME
+        String time = TIME_FORMAT.format(new Date(tile.getTime()));
 
         // sets an event listener to change the information panel to preview the information of this tile
         tileRectangle.setOnMouseEntered(

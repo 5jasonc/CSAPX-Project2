@@ -9,8 +9,6 @@ import java.util.Scanner;
 
 import static java.lang.Thread.sleep;
 
-// fully commented
-
 /**
  * A multithreaded Bot client that connects to a PlaceServer and performs actions that FILL the screen with color.
  *

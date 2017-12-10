@@ -14,12 +14,11 @@ import place.network.NetworkServer;
 import place.network.PlaceRequest;
 import place.network.PlaceRequest.RequestType;
 
-// fully commented
-
 /**
  * The PlaceClientThread is the server-sided class that listens to the client's input and relays it to the NetworkServer.
  *
  * @author Kevin Becker (kjb2503)
+ * @author Jason Streeter (jcs1738)
  */
 public class PlaceClientThread
 {
@@ -90,6 +89,8 @@ public class PlaceClientThread
     /**
      * Constructs a new thread for a player once they connect to the server.
      *
+     * Package private since we're only creating this from within the server class.
+     *
      * @param player The player socket.
      * @param networkServer The NetworkServer so we can communicate with it.
      *
@@ -102,7 +103,6 @@ public class PlaceClientThread
         {
             // sets our location
             this.location = player.getInetAddress();
-
             // sets the ObjectOutputStream (need to do OUTPUT before we can do INPUT)
             this.out = new ObjectOutputStream( player.getOutputStream() );
             // sets the ObjectInputStream
@@ -156,14 +156,14 @@ public class PlaceClientThread
                             // set our username
                             String usernameRequest = (String) request.getData();
 
-                            // attempts to login here
+                            // attempts to login here, if valid, sets our username
                             if(login(usernameRequest))
-                            {
-                                // alert that user has connected
-                                log(usernameRequest + " has joined the server. [" + this.location + "]");
-                                // sets our username to the our actual username
                                 this.username = usernameRequest;
-                            }
+                        }
+                        else
+                        {
+                            // log we have had a bad request from the user
+                            badRequest(RequestType.LOGIN.toString());
                         }
                         break;
                     case CHANGE_TILE:
@@ -180,14 +180,14 @@ public class PlaceClientThread
                             }
                             else
                             {
-                                logErr(this.username + " has requested to change a tile that doesn't exist.");
-                                logErr("Terminating connection for " + this.username + ".");
-                                badRequest("Tile not valid.");
+                                // sends a tile not valid request
+                                badRequest("INVALID TILE");
                             }
                         }
                         else
                         {
-                            logErr(this.username + " sent a tile too soon. Ignoring it.");
+                            // log our quick user
+                            fastRequest();
                         }
                         break;
                     // we shouldn't ever receive these from the player... they are bad requests
@@ -241,7 +241,7 @@ public class PlaceClientThread
      */
     private synchronized void coolDown()
     {
-        // sleeps
+        // sets our cool down to true as we begin our 500ms sleep
         this.coolDown = true;
         // sleeps for 500ms
         try
@@ -280,33 +280,16 @@ public class PlaceClientThread
     private boolean tileChangeRequest(PlaceTile tile)
     {
         // tells the networkServer we want to change a tile
-        return this.networkServer.tileChangeRequest(tile);
+        return this.networkServer.tileChangeRequest(this.username, tile);
     }
 
     /**
-     * Logs a non-error message to standard output.
-     *
-     * Runs through NetworkServer.
-     *
-     * @param msg The message to be printed out.
+     * If a user sends a request too fast, we tell networkServer so it may perform appropriately.
      */
-    private void log(String msg)
+    private void fastRequest()
     {
-        this.networkServer.log(msg);
+        this.networkServer.fastRequest(this.username);
     }
-
-    /**
-     * Logs an error message to standard output.
-     *
-     * Runs through NetworkServer.
-     *
-     * @param msg The message to be printed out.
-     */
-    private void logErr(String msg)
-    {
-        this.networkServer.logErr(msg);
-    }
-
 
     /**
      * Closes the connections so that we can gracefully shut down.

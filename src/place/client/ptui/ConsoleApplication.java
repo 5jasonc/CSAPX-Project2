@@ -73,7 +73,7 @@ public abstract class ConsoleApplication {
         public void run() {
             try ( Scanner in = new Scanner( System.in ) ) {
                 try {
-                    ptuiApp.go( in );
+                    ptuiApp.start( in );
                 }
                 catch( Exception e ) {
                     e.printStackTrace();
@@ -98,10 +98,11 @@ public abstract class ConsoleApplication {
     public void init() throws Exception {}
 
     /**
-     * The method that is expected to run the main loop of the console
-     * application, prompting the user for text input.
+     * The method that is expected to run the main guts of our program.
+     *
+     * @param in The scanner used for user input of moves.
      */
-    public abstract void go( Scanner in ) throws Exception;
+    public abstract void start( Scanner in );
 
     /**
      * A do-nothing teardown method that can be overwritten by subclasses

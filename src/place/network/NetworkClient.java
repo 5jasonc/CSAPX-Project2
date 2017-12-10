@@ -11,12 +11,11 @@ import java.io.ObjectOutputStream;
 
 import java.net.Socket;
 
-// fully commented
-
 /**
  * A network middle-man for a Place client.
  *
  * @author Kevin Becker (kjb2503)
+ * @author Jason Streeter (jcs1738)
  */
 public class NetworkClient {
 
@@ -72,7 +71,7 @@ public class NetworkClient {
      *
      * @return true if this.go is set to true; false otherwise.
      */
-    private synchronized boolean go() { return this.go; }
+    public boolean go() { return this.go; }
 
     /**
      * This is used to stop the thread from running.
@@ -143,7 +142,6 @@ public class NetworkClient {
                     throw new PlaceException("Unable to join.");
             }
 
-
             // BOARD READ-IN SEQUENCE ===============================
             // read in the object (should be a board)
             PlaceRequest<?> boardResponse = ( PlaceRequest<?> ) in.readUnshared();
@@ -154,7 +152,7 @@ public class NetworkClient {
                 this.board.initializeBoard( (PlaceBoard) boardResponse.getData() );
             // if we weren't sent a board, we were given something bad, we need to escape now.
             else
-                throw new PlaceException("Board class never sent.");
+                throw new PlaceException("Board never sent.");
             // sets go to be true
             this.go = true;
         }
@@ -219,6 +217,7 @@ public class NetworkClient {
             }
             catch(IOException | ClassNotFoundException e)
             {
+                // once we have disconnected, let the user know here
                 disconnected();
 
                 // stop the client because we've hit an unrecoverable issue
@@ -310,6 +309,9 @@ public class NetworkClient {
         this.stop();
     }
 
+    /**
+     * Prints a message if we have lost connection to the server.
+     */
     private void disconnected()
     {
         logErr("Lost connection to server.");

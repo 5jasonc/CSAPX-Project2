@@ -10,8 +10,6 @@ import java.util.Observable;
 import java.util.Observer;
 import java.util.Scanner;
 
-// fully commented
-
 /**
  * A multithreaded Bot client that connects to a PlaceServer and performs actions that FILL the screen with color.
  *

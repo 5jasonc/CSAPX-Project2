@@ -1,8 +1,14 @@
 package place.server;
 
 import java.io.Closeable;
+import java.io.File;
+import java.io.PrintWriter;
+import java.io.FileWriter;
 import java.io.IOException;
+
 import java.net.ServerSocket;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import place.PlaceException;
 import place.network.NetworkServer;
@@ -11,8 +17,16 @@ import place.network.NetworkServer;
  * A PlaceServer is a location that PlaceClients can connect and create cool tile drawings.
  *
  * This class implements closeable so its "close()" method is called automatically upon exit.
+ *
+ * @author Kevin Becker (kjb2503)
+ * @author Jason Streeter (jcs1738)
  */
-public class PlaceServer implements Closeable {
+public class PlaceServer implements Closeable, AutoCloseable {
+
+    /**
+     * A simple formatter which formats the current time to appear as a nice, easy to read format.
+     */
+    private final static SimpleDateFormat TIME_STAMP_FORMAT = new SimpleDateFormat("MM-dd-yyyy HH.mm.ss");
 
     /**
      * The ServerSocket which is used to connect to clients.
@@ -55,19 +69,57 @@ public class PlaceServer implements Closeable {
     {
         try
         {
+
+            // makes our directory if we need to (mostly used if user deletes, or first-run)
+            File directory = new File("logs");
+            // checks if we need to create our directory
+            if(!directory.exists())
+                directory.mkdir();
+
+
+            // gets our current timestamp
+            String ts = TIME_STAMP_FORMAT.format(new Date(System.currentTimeMillis()));
+
+            // creates a log with a name: log-(timestamp).txt
+            File logLocation = new File("logs/" + ts + ".log");
+
+            // creates the log if it doesn't exist already (why should it??)
+            if(!logLocation.exists())
+                logLocation.createNewFile();
+
+            // creates a new buffered writer that will write to the log
+            // set to append just in case it already exists (it shouldn't)
+            PrintWriter log = new PrintWriter(new FileWriter(logLocation, true), true);
+
+            // writes initial header to the log
+            log.println("============================= PLACE SERVER LOG =============================");
+            log.println("= Log generation started: " + ts);
+            log.println("= Beginning startup sequence...");
+
             // makes a new server socket broadcasting on port
+            log.print("= Opening PlaceServer on port " + port + "...");
             this.server = new ServerSocket(port);
+            log.println("success.");
+
             // makes a new NetworkServer (the major brains of the program)
-            this.networkServer = new NetworkServer(dim);
+            log.print("= Building main communications...");
+            this.networkServer = new NetworkServer(dim, log);
+            log.println("success.");
+
+            log.println("= Startup sequence complete.");
+            log.println("=============================================================================");
         }
-        catch(IOException ioe)
+        catch(Exception e)
         {
-            // throws the exception as a PlaceException
-            throw new PlaceException(ioe);
+            // throws an exception if any sort of issue is run into
+            throw new PlaceException(e);
         }
+
+        // sets go to true so we know beginning is happening
         this.go = true;
+
         // say this to output once we've set everything up.
-        this.networkServer.log("Server has started successfully. Accepting connections on port " + port + ".");
+        this.networkServer.serverStarted(port);
     }
 
     /**

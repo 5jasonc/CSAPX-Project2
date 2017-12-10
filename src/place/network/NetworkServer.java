@@ -6,11 +6,11 @@ import place.network.PlaceRequest.RequestType;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.net.InetAddress;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
-
-// fully commented
 
 /**
  * A network middle-man for a Place server.
@@ -35,6 +35,11 @@ public class NetworkServer
     private static final int MAX_CONNECTIONS_SINGLE_HOST = 10;
 
     /**
+     * The date formatter used when a tile is changed.
+     */
+    private final static SimpleDateFormat TIME_STAMP_FORMAT = new SimpleDateFormat("MM-dd-yyyy 'at' HH:mm:ss");
+
+    /**
      * The Map that contains all of the currently connected users.
      * The key is a String that is the username
      * The value is that user's ObjectOutputStream
@@ -52,9 +57,14 @@ public class NetworkServer
     private int totalConnections;
 
     /**
-     * The "master" PlaceBoard that is used to send to users and
+     * The "master" PlaceBoard that is used to send to new users.
      */
     private PlaceBoard board;
+
+    /**
+     * The PrintWriter that is used to log the status of the game.
+     */
+    private PrintWriter log;
 
 
     /**
@@ -64,7 +74,7 @@ public class NetworkServer
      *
      * @param dim the dimension of the board once it is set up.
      */
-    public NetworkServer(int dim)
+    public NetworkServer(int dim, PrintWriter log)
     {
         // creates a new HashMap that will house all of the logged in users
         this.users = new HashMap<>();
@@ -74,6 +84,18 @@ public class NetworkServer
 
         // this holds the "master" PlaceBoard that will be updated with every move and sent to new users
         this.board = new PlaceBoard(dim);
+
+        this.log = log;
+    }
+
+    /**
+     * The server calls this method once it has started completely.
+     *
+     * @param port The port the server has started on.
+     */
+    public void serverStarted(int port)
+    {
+        log("Server has started successfully. Accepting connections on port " + port + ".");
     }
 
     /**
@@ -97,18 +119,25 @@ public class NetworkServer
             // if the username is taken
             if(usernameTaken(usernameRequest))
             {
+                logSilent("");
                 // tell the user the username they requested is taken
                 out.writeUnshared(new PlaceRequest<>(RequestType.ERROR, "Username taken"));
             }
             // else if the number of connections from their IP is at max
             else if (this.connections.get(location) >= MAX_CONNECTIONS_SINGLE_HOST)
             {
+                // silently logs if the user has attempted to join while their IP is at max
+                logSilent("A user has attempted to join the server from an IP address with max connections.");
+                logSilent("Requested username: " + usernameRequest + " [" + location + "]");
                 // tell the user there are too many connections from their IP
                 out.writeUnshared(new PlaceRequest<>(RequestType.ERROR, "Too many connections from your IP"));
             }
             // else if the number of connections is at max
             else if (this.totalConnections >= MAX_TOTAL_CONNECTIONS)
             {
+                // silently logs the user trying to join while server full
+                logSilent(usernameRequest + " has attempted to join the server while full. Denying connection.");
+                logSilent("Requested username: " + usernameRequest + " [" + location + "]");
                 // tell the user the server is full
                 out.writeUnshared(new PlaceRequest<>(RequestType.ERROR, "Server full"));
             }
@@ -129,10 +158,9 @@ public class NetworkServer
                 // then immediately send the current board so they can begin setup immediately
                 out.writeUnshared(new PlaceRequest<>(RequestType.BOARD, this.board));
                 // this is the only place we return true
+                log( usernameRequest + " has joined the server. [" + location + "]");
                 return true;
             }
-            // flush the output
-            out.flush();
         }
         catch(IOException e)
         {
@@ -166,6 +194,10 @@ public class NetworkServer
      */
     public void badRequest(String username, String type) throws IOException
     {
+        // log we have had an error from (username)
+        logErr(username + " has sent a bad request. Request type: " + type);
+        logErr("Terminating connection for " + username + ".");
+
         // gets the ObjectOutputStream associated with the username
         ObjectOutputStream out = this.users.get(username);
 
@@ -179,8 +211,7 @@ public class NetworkServer
         // flushes the stream so it sends
         out.flush();
 
-        // prints to the server log that user has sent a bad request
-        logErr("Bad request received from " + username + ". REQUEST: " + type);
+
     }
 
     /**
@@ -218,29 +249,40 @@ public class NetworkServer
      *
      * @param tile the PlaceTile request that was made.
      */
-    public synchronized boolean tileChangeRequest(PlaceTile tile)
+    public synchronized boolean tileChangeRequest(String username, PlaceTile tile)
     {
-        // checks if a tile is invalid
+        // logs silently username's request to change a tile
+        logSilent(username + " requested to change a tile: " + tile);
+
+        // checks if a tile is invalid, if it is returns false while we still can
         if(!isValid(tile))
-        {
-            // if we get here something is no good! (aka tile invalid, must disconnect)
             return false;
-        }
         // creates our changedTile request to send to all users
         PlaceRequest<PlaceTile> changedTile = new PlaceRequest<>(PlaceRequest.RequestType.TILE_CHANGED, tile);
         // loops through each user that is currently connected
         for (ObjectOutputStream out : users.values()) {
-            try {
+            try
+            {
                 // writes out our changed tile
                 out.writeUnshared(changedTile);
                 // sets the place in the board that was just changed
                 this.board.setTile(tile);
-            } catch (IOException e) {
-                // oops
             }
+            catch (IOException e) { /* oops*/ }
         }
-        // once we've gone through every user we van return true
+        // once we've gone through every user we can return true
         return true;
+    }
+
+    /**
+     * If a user sends a tile within the cool-down period, we note that here and ignore their request.
+     *
+     * @param username The username of the user that sent a request too quickly.
+     */
+    public synchronized void fastRequest(String username)
+    {
+        // logs the error
+        logErr(username + " has sent a tile too quickly. Ignoring it.");
     }
 
     /**
@@ -256,23 +298,49 @@ public class NetworkServer
     }
 
     /**
-     * Logs a non-error message to standard output.
+     * Logs a non-error message to standard output AND log file.
      *
      * @param msg The message to be printed out.
      */
-    public void log(String msg)
+    private void log(String msg)
     {
         System.out.println(LOG_HEADER + msg);
+        // logs the msg to the log file
+        // auto flush is enabled, no need to flush()
+        this.log.println("[" + now() + "]: " + msg);
     }
 
     /**
-     * Logs an error message to standard output.
+     * Logs an error message to standard output AND log file.
      *
      * @param msg The message to be printed out.
      */
-    public void logErr(String msg)
+    private void logErr(String msg)
     {
         System.err.println(LOG_HEADER + msg);
+        // logs we have hit an error
+        // auto flush is enabled, no need to flush()
+        this.log.println("[" + now() + "] ALERT: " + msg);
+    }
+
+    /**
+     * Logs to the log file only; no display to terminal window.
+     *
+     * @param msg The message to be logged.
+     */
+    private void logSilent(String msg)
+    {
+        this.log.println("[" + now() + "]: " + msg);
+    }
+
+    /**
+     * Returns a time stamp for the current system time.
+     *
+     * @return A string of the format: MM/dd/YY at HH:MM:SS
+     */
+    private String now()
+    {
+        return TIME_STAMP_FORMAT.format(System.currentTimeMillis());
     }
 
     /**
@@ -281,9 +349,13 @@ public class NetworkServer
      */
     public void serverError()
     {
+        // logs we have initiated our server panic sequence of telling all users that we are disconnecting.
+        logSilent("Server has initiated panic sequence!");
+        logSilent("Alerting all connections the server will deactivate.");
+
         // creates our error request to send to all users
         PlaceRequest<String> error = new PlaceRequest<>(PlaceRequest.RequestType.ERROR,
-                "The server has hit an unrecoverable error.");
+                "The server has hit an unrecoverable error. Terminating all connections.");
         // loops through each user that is currently connected
         for( ObjectOutputStream out : users.values() )
         {

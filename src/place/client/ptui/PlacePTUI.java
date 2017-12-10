@@ -2,10 +2,14 @@ package place.client.ptui;
 
 import place.PlaceBoardObservable;
 import place.PlaceColor;
+import place.PlaceException;
 import place.PlaceTile;
 import place.network.NetworkClient;
 
-import java.util.*;
+import java.util.Observer;
+import java.util.Observable;
+import java.util.List;
+import java.util.Scanner;
 
 /**
  * A PTUI client which connects to a PlaceServer.
@@ -20,36 +24,60 @@ import java.util.*;
 public class PlacePTUI extends ConsoleApplication implements Observer
 {
 
+    /**
+     * The prompt that is printed to the window when it's time for a user to enter their tile choice.
+     */
     private final static String PROMPT = "Enter a tile to color (row col color): ";
 
+    /**
+     * The username of the user.
+     */
     private String username;
 
+    /**
+     * The Observable model that is used to keep our board up to date.
+     */
     private PlaceBoardObservable model;
 
+    /**
+     * The connection to the Place server.
+     */
     private NetworkClient serverConn;
 
+    /**
+     * The boolean that maintains if the application should keep running.
+     */
     private boolean go;
 
-    private boolean go()
+    /**
+     * A simple synchronized go method to get the status of the program.
+     *
+     * @return the status of this.go, true if application should keep going, false otherwise.
+     */
+    private synchronized boolean go()
     {
         return this.go;
     }
 
     /**
-     * Initializes client before doing anything with model of our board
+     * Initializes client before doing anything with model of our board.
+     *
+     * @throws Exception if any sort of issue is encountered with setting up our server connection.
      */
     @Override
     public void init() throws Exception {
-        // calls the superclass' init method just in case there's something there.
+        // calls the superclass init method just in case there's something there.
         super.init();
 
+        // gets our parameters
         List<String> parameters = super.getArguments();
-        // Get command line arguments to be used
+
+        // sets our needed parameters
         String hostname = parameters.get(0);
         int port = Integer.parseInt(parameters.get(1));
         this.username = parameters.get(2);
 
-        // Creates blank model for board
+        // Creates blank model for board (updated in serverConn)
         this.model = new PlaceBoardObservable();
 
         try
@@ -57,75 +85,73 @@ public class PlacePTUI extends ConsoleApplication implements Observer
             // Connects with the NetworkClient to communicate with PlaceServer
             this.serverConn = new NetworkClient(hostname, port, this.username, getClass().getSimpleName(), this.model);
         }
-        catch(Exception e)
+        catch(PlaceException e)
         {
-            System.err.println("Error connecting with Place server...");
+            // closes serverConn
             this.serverConn.close();
-            System.err.println(e.getMessage());
-            System.exit(1);
+            // tells the user about the issue we've run into
+            throw e;
         }
-    }
 
-    /**
-     * Constructs the board we will use and then prints it out
-     */
-    @Override
-    public synchronized void go( Scanner in ) throws Exception {
+        // if we can get to this point we have successfully connected to the Place server
+
         // begins thread for NetworkClient to listen to server
         this.serverConn.start();
 
         // make PTUI an observer of the board
         this.model.addObserver(this);
 
+        // sets go to true because it's go time
         this.go = true;
-
-        // Starts our run function
-        run(in);
     }
 
     /**
-     * Function that gets run to continuously check for user input
+     * Method that runs the program listening for user inputs.
+     *
+     * @param in The scanner used for user input of moves.
      */
-    public void run( Scanner in )
+    @Override
+    public void start( Scanner in )
     {
         // prints the board
         printBoard();
         // prompts the user to input
         this.serverConn.log(PROMPT);
 
-        while(this.go()) {
+        // while we are still good to go on both server communications and client side
+        while(this.go() && this.serverConn.go()) {
+            // get the next move of the player and split it up
             String [] playerInput = in.nextLine().trim().split(" ");
-            PlaceTile newTile;
 
             // Check if user exits program
-            if(playerInput[0].equals("-1") && playerInput.length == 1) {
+            if(playerInput[0].equals("-1")) {
+                this.serverConn.log("Exit command has been read. Exiting PTUI.");
                 this.go = false;
             }
-            else if(playerInput.length != 3) {
-                // if the user enters something that isn't -1 and doesn't have 3 arguments
-                // let them know their input was invalid.
+            // Check if user enters too much/little
+            if(playerInput.length != 3) {
                 this.serverConn.logErr("Please enter a valid command.");
             }
             else {
-                // Otherwise check for player input of where to place move
-                int placeRow = Integer.parseInt(playerInput[0]);
-                int placeCol = Integer.parseInt(playerInput[1]);
-                int color = Integer.parseInt(playerInput[2]);
+                try {
+                    // Otherwise check for player input of where to place move
+                    int row = Integer.parseInt(playerInput[0]);
+                    int col = Integer.parseInt(playerInput[1]);
+                    int color = Integer.parseInt(playerInput[2]);
 
-                // Checks if color user selected is valid
-                if(color <= 15 && color >= 0) {
-                    // Get color user wants to place
-                    PlaceColor newColor = PlaceColor.values()[color];
+                    // Checks if color user selected is valid
+                    if (color <= 15 && color >= 0) {
+                        // creates a new tile that will be sent to the server
+                        PlaceTile newTile = new PlaceTile(row, col, this.username, PlaceColor.values()[color], System.currentTimeMillis());
 
-                    // Sends user's move to the server
-                    newTile = new PlaceTile(placeRow, placeCol, this.username, newColor, System.currentTimeMillis());
-
-                    // sends tile placement to server
-                    this.serverConn.sendTile(newTile);
+                        // sends tile placement to server
+                        this.serverConn.sendTile(newTile);
+                    } else {
+                        this.serverConn.logErr("Please enter a color value between 0-15.");
+                    }
                 }
-                else {
-                    this.serverConn.logErr("Please enter a color value between 0-15.");
-                }
+                // if something user enter isn't a number
+                catch (NumberFormatException e) { this.serverConn.logErr("Please only enter numbers"); }
             }
         }
     }
@@ -135,18 +161,20 @@ public class PlacePTUI extends ConsoleApplication implements Observer
      */
     @Override
     public void stop() {
+        // calls super stop method
         super.stop();
+        // closes our serverConn
         this.serverConn.close();
     }
 
     /**
      * Update the state of our model with user input from the console.
      */
-    private void refresh() {
+    private void refreshBoard() {
         // reprints the board
         printBoard();
         // prompts the user again
-        System.out.println(PROMPT);
+        this.serverConn.log(PROMPT);
     }
 
     /**
@@ -162,7 +190,7 @@ public class PlacePTUI extends ConsoleApplication implements Observer
         assert o == this.model: "Update message came from non-board";
 
         // if we're good to go, we refresh
-        refresh();
+        refreshBoard();
     }
 
     /**
@@ -172,13 +200,20 @@ public class PlacePTUI extends ConsoleApplication implements Observer
         System.out.println(this.model.getBoard());
     }
 
+    /**
+     * The main method of our program. It is run on the command line using
+     * @param args
+     */
     public static void main(String[] args) {
         // Checks for proper command line arguments
         if(args.length != 3) {
-            System.err.println("Usage: $ java PlacePTUI host port username");
-            System.exit(1);
+            // makes sure we were given the proper number of arguments, if not, tell the user the proper way to start it
+            System.err.println("Please run the PTUI as:");
+            System.err.println("$ java PlacePTUI host port username");
+            return;
         }
 
+        // if we get here it's go time
         ConsoleApplication.launch(PlacePTUI.class, args);
     }
 }

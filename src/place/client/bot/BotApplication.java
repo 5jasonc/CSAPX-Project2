@@ -8,8 +8,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
-// fully commented
-
 /**
  * The BotApplication class is used to launch a Bot client which connects to a PlaceServer.
  *
@@ -236,7 +234,7 @@ public abstract class BotApplication {
     public abstract boolean go();
 
 
-    // STATIC METHOD ===========================
+    // STATIC METHODS ===========================
     /**
      * Prints a help manual to the screen (so the user knows what commands do what)
      */
