@@ -129,7 +129,7 @@ public class PlacePTUI extends ConsoleApplication implements Observer
                 this.go = false;
             }
             // Check if user enters too much/little
-            if(playerInput.length != 3) {
+            else if(playerInput.length != 3) {
                 this.serverConn.logErr("Please enter a valid command.");
             }
             else {
